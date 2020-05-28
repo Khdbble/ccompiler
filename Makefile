@@ -1,11 +1,16 @@
 CFLAGS=-std=c11 -g -static
 
-9cc: 9cc.c
+main: main.c
 
-test: 9cc
+simpletest: main
 		./test.sh
 
 clean:
-		rm -f 9cc *.o *~ tmp*
+		rm -f main *.o *~ tmp*
 
-.PHONY: test clean
+test:
+		docker run --rm -v ${HOME}/documents/ccompiler:/ccompiler -w /ccompiler compiler make simpletest
+		make clean
+
+
+.PHONY: simpletest clean test
