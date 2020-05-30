@@ -1,12 +1,17 @@
-CFLAGS=-std=c11 -g -static
+CFLAGS=-std=c11 -g -static -fno-common
+SRCS=$(wildcard *.c)
+OBJS=$(SRCS:.c=.o)
 
-main: main.c
+nsc: $(OBJS)
+		$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
-simpletest: main
+$(OBJS): nsc.h
+
+simpletest: nsc
 		./test.sh
 
 clean:
-		rm -f main *.o *~ tmp*
+		rm -f nsc *.o *~ tmp*
 
 test:
 		docker run --rm -v ${HOME}/documents/ccompiler:/ccompiler -w /ccompiler compiler make simpletest
