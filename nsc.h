@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
@@ -37,6 +38,15 @@ Token *tokenize(char *input);
 // parser.c
 //
 
+// Local variable
+typedef struct Var Var;
+struct Var {
+    Var *next;
+    char *name;  // Variable name
+    int offset;  // Offset from RBP
+};
+
+// AST node
 typedef enum {
     ND_ADD,        // +
     ND_SUB,        // -
@@ -60,14 +70,20 @@ struct Node {
     Node *next;     // Next node
     Node *lhs;      // Left-hand side
     Node *rhs;      // Right-hand side
-    char name;      // Used if kind == ND_VAR
+    Var *var;       // Used if kind == ND_VAR
     long val;       // Used if kind == ND_NUM
 };
 
-Node *parse(Token *tok);
+typedef struct Function Function;
+struct Function {
+    Node *node;
+    Var *locals;
+    int stack_size;
+};
 
+Function *parse(Token *tok);
 //
 // codegen.c
 //
 
-void codegen(Node *node);
+void codegen(Function *prog);

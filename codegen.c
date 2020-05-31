@@ -12,9 +12,7 @@ static char *reg(int idx) {
 // Pushes the given node's address to the stack.
 static void gen_addr(Node *node) {
     if (node->kind == ND_VAR) {
-        int offset = (node->name - 'a' + 1) * 8;
-        offset += 32;  // for callee-saved registers
-        printf("  lea %s, [rbp-%d]\n", reg(top++), offset);
+        printf("  lea %s, [rbp-%d]\n", reg(top++), node->var->offset);
         return;
     }
 
@@ -111,7 +109,7 @@ static void gen_stmt(Node *node) {
     }
 }
 
-void codegen(Node *node) {
+void codegen(Function *prog) {
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");
     printf("main:\n");
@@ -119,13 +117,13 @@ void codegen(Node *node) {
     // Prologue. r12-15 are callee-saved registers.
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
-    printf("  sub rsp, 240\n");
+    printf("  sub rsp, %d\n", prog->stack_size);
     printf("  mov [rbp-8], r12\n");
     printf("  mov [rbp-16], r13\n");
     printf("  mov [rbp-24], r14\n");
     printf("  mov [rbp-32], r15\n");
 
-    for (Node *n = node; n; n = n->next) {
+    for (Node *n = prog->node; n; n = n->next) {
         gen_stmt(n);
         assert(top == 0);
     }
