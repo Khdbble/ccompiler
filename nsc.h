@@ -11,6 +11,7 @@
 // tokenizer.c
 //
 
+// Token
 typedef enum {
     TK_RESERVED,  // Keywords or punctuators
     TK_IDENT,     // Identifiers
@@ -58,6 +59,8 @@ typedef enum {
     ND_LE,         // <=
     ND_ASSIGN,     // =
     ND_RETURN,     // "return"
+    ND_IF,         // "if"
+    ND_FOR,        // "for" or "while"
     ND_EXPR_STMT,  // Expression statement
     ND_VAR,        // Variable
     ND_NUM,        // Integer
@@ -68,10 +71,19 @@ typedef struct Node Node;
 struct Node {
     NodeKind kind;  // Node kind
     Node *next;     // Next node
-    Node *lhs;      // Left-hand side
-    Node *rhs;      // Right-hand side
-    Var *var;       // Used if kind == ND_VAR
-    long val;       // Used if kind == ND_NUM
+
+    Node *lhs;  // Left-hand side
+    Node *rhs;  // Right-hand side
+
+    // "if" or "for" statement
+    Node *cond;
+    Node *then;
+    Node *els;
+    Node *init;
+    Node *inc;
+
+    Var *var;  // Used if kind == ND_VAR
+    long val;  // Used if kind == ND_NUM
 };
 
 typedef struct Function Function;
@@ -82,6 +94,7 @@ struct Function {
 };
 
 Function *parse(Token *tok);
+
 //
 // codegen.c
 //

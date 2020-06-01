@@ -67,15 +67,59 @@ static long get_number(Token *tok) {
 }
 
 // stmt = "return" expr ";"
+//      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+//      | "while" "(" expr ")" stmt
 //      | expr ";"
 static Node *stmt(Token **rest, Token *tok) {
-    Node *node;
+    if (equal(tok, "return")) {
+        Node *node = new_unary(ND_RETURN, expr(&tok, tok->next));
+        *rest = skip(tok, ";");
+        return node;
+    }
 
-    if (equal(tok, "return"))
-        node = new_unary(ND_RETURN, expr(&tok, tok->next));
-    else
-        node = new_unary(ND_EXPR_STMT, expr(&tok, tok));
+    if (equal(tok, "if")) {
+        Node *node = new_node(ND_IF);
+        tok = skip(tok->next, "(");
+        node->cond = expr(&tok, tok);
+        tok = skip(tok, ")");
+        node->then = stmt(&tok, tok);
+        if (equal(tok, "else"))
+            node->els = stmt(&tok, tok->next);
+        *rest = tok;
+        return node;
+    }
 
+    if (equal(tok, "for")) {
+        Node *node = new_node(ND_FOR);
+        tok = skip(tok->next, "(");
+
+        if (!equal(tok, ";"))
+            node->init = new_unary(ND_EXPR_STMT, expr(&tok, tok));
+        tok = skip(tok, ";");
+
+        if (!equal(tok, ";"))
+            node->cond = expr(&tok, tok);
+        tok = skip(tok, ";");
+
+        if (!equal(tok, ")"))
+            node->inc = new_unary(ND_EXPR_STMT, expr(&tok, tok));
+        tok = skip(tok, ")");
+
+        node->then = stmt(rest, tok);
+        return node;
+    }
+
+    if (equal(tok, "while")) {
+        Node *node = new_node(ND_FOR);
+        tok = skip(tok->next, "(");
+        node->cond = expr(&tok, tok);
+        tok = skip(tok, ")");
+        node->then = stmt(rest, tok);
+        return node;
+    }
+
+    Node *node = new_unary(ND_EXPR_STMT, expr(&tok, tok));
     *rest = skip(tok, ";");
     return node;
 }
