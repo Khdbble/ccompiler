@@ -58,6 +58,8 @@ typedef enum {
     ND_LT,         // <
     ND_LE,         // <=
     ND_ASSIGN,     // =
+    ND_ADDR,       // unary &
+    ND_DEREF,      // unary *
     ND_RETURN,     // "return"
     ND_IF,         // "if"
     ND_FOR,        // "for" or "while"
@@ -72,6 +74,7 @@ typedef struct Node Node;
 struct Node {
     NodeKind kind;  // Node kind
     Node *next;     // Next node
+    Token *tok;     // Representative token
 
     Node *lhs;  // Left-hand side
     Node *rhs;  // Right-hand side

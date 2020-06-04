@@ -10,14 +10,20 @@ static char *reg(int idx) {
     return r[idx];
 }
 
+static void gen_expr(Node *node);
+
 // Pushes the given node's address to the stack.
 static void gen_addr(Node *node) {
-    if (node->kind == ND_VAR) {
-        printf("  lea %s, [rbp-%d]\n", reg(top++), node->var->offset);
-        return;
+    switch (node->kind) {
+        case ND_VAR:
+            printf("  lea %s, [rbp-%d]\n", reg(top++), node->var->offset);
+            return;
+        case ND_DEREF:
+            gen_expr(node->lhs);
+            return;
     }
 
-    error("not an lvalue");
+    error_tok(node->tok, "not an lvalue");
 }
 
 static void load(void) {
@@ -38,6 +44,13 @@ static void gen_expr(Node *node) {
         case ND_VAR:
             gen_addr(node);
             load();
+            return;
+        case ND_DEREF:
+            gen_expr(node->lhs);
+            load();
+            return;
+        case ND_ADDR:
+            gen_addr(node->lhs);
             return;
         case ND_ASSIGN:
             gen_expr(node->rhs);
@@ -90,7 +103,7 @@ static void gen_expr(Node *node) {
             printf("  movzx %s, al\n", rd);
             return;
         default:
-            error("invalid expression");
+            error_tok(node->tok, "invalid expression");
     }
 }
 
@@ -147,7 +160,7 @@ static void gen_stmt(Node *node) {
             top--;
             return;
         default:
-            error("invalid statement");
+            error_tok(node->tok, "invalid statement");
     }
 }
 
