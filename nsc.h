@@ -7,8 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct Type Type;
+
 //
-// tokenizer.c
+// tokenize.c
 //
 
 // Token
@@ -33,10 +35,11 @@ void error(char *fmt, ...);
 void error_tok(Token *tok, char *fmt, ...);
 bool equal(Token *tok, char *op);
 Token *skip(Token *tok, char *op);
+bool consume(Token **rest, Token *tok, char *str);
 Token *tokenize(char *input);
 
 //
-// parser.c
+// parse.c
 //
 
 // Local variable
@@ -44,6 +47,7 @@ typedef struct Var Var;
 struct Var {
     Var *next;
     char *name;  // Variable name
+    Type *ty;    // Type
     int offset;  // Offset from RBP
 };
 
@@ -74,6 +78,7 @@ typedef struct Node Node;
 struct Node {
     NodeKind kind;  // Node kind
     Node *next;     // Next node
+    Type *ty;       // Type, e.g. int or pointer to int
     Token *tok;     // Representative token
 
     Node *lhs;  // Left-hand side
@@ -101,6 +106,29 @@ struct Function {
 };
 
 Function *parse(Token *tok);
+
+//
+// typing.c
+//
+
+typedef enum { TY_INT,
+               TY_PTR } TypeKind;
+
+struct Type {
+    TypeKind kind;
+
+    // Pointer
+    Type *base;
+
+    // Declaration
+    Token *name;
+};
+
+extern Type *ty_int;
+
+bool is_integer(Type *ty);
+Type *pointer_to(Type *base);
+void add_type(Node *node);
 
 //
 // codegen.c

@@ -21,5 +21,6 @@ int main(int argc, char **argv) {
 
     // Traverse the AST to emit assembly.
     codegen(prog);
+
     return 0;
 }
