@@ -402,7 +402,22 @@ static Node *unary(Token **rest, Token *tok) {
     return primary(rest, tok);
 }
 
-// primary = "(" expr ")" | ident | num
+// func-args = "(" (assign ("," assign)*)? ")"
+static Node *func_args(Token **rest, Token *tok) {
+    Node head = {};
+    Node *cur = &head;
+
+    while (!equal(tok, ")")) {
+        if (cur != &head)
+            tok = skip(tok, ",");
+        cur = cur->next = assign(&tok, tok);
+    }
+
+    *rest = skip(tok, ")");
+    return head.next;
+}
+
+// primary = "(" expr ")" | ident func-args? | num
 static Node *primary(Token **rest, Token *tok) {
     if (equal(tok, "(")) {
         Node *node = expr(&tok, tok->next);
@@ -411,6 +426,15 @@ static Node *primary(Token **rest, Token *tok) {
     }
 
     if (tok->kind == TK_IDENT) {
+        // Function call
+        if (equal(tok->next, "(")) {
+            Node *node = new_node(ND_FUNCALL, tok);
+            node->funcname = strndup(tok->loc, tok->len);
+            node->args = func_args(rest, tok->next->next);
+            return node;
+        }
+
+        // Variable
         Var *var = find_var(tok);
         if (!var)
             error_tok(tok, "undefined variable");

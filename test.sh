@@ -1,11 +1,20 @@
 #!/bin/bash
+cat <<EOF | gcc -xc -c -o tmp2.o -
+int ret3() { return 3; }
+int ret5() { return 5; }
+int add(int x, int y) { return x+y; }
+int sub(int x, int y) { return x-y; }
+int add6(int a, int b, int c, int d, int e, int f) {
+  return a+b+c+d+e+f;
+}
+EOF
 
 assert() {
   expected="$1"
   input="$2"
 
-  ./nsc "$input" > tmp.s
-  cc -o tmp tmp.s
+  ./nsc "$input" > tmp.s || exit
+  gcc -static -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
 
@@ -86,5 +95,11 @@ assert 7 '{ int x=3; int y=5; *(&y-1)=7; return x; }'
 assert 2 '{ int x=3; return (&x+2)-&x; }'
 assert 8 '{ int x, y; x=3; y=5; return x+y; }'
 assert 8 '{ int x=3, y=5; return x+y; }'
+
+assert 3 '{ return ret3(); }'
+assert 5 '{ return ret5(); }'
+assert 8 '{ return add(3, 5); }'
+assert 2 '{ return sub(5, 3); }'
+assert 21 '{ return add6(1,2,3,4,5,6); }'
 
 echo OK
