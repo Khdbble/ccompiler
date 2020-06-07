@@ -26,7 +26,7 @@ assert() {
   fi
 }
 
-assert 0 'int main() { return 0; }'
+assert 80 'int main() { return 0; }'
 assert 42 'int main() { return 42; }'
 assert 21 'int main() { return 5+20-4; }'
 assert 41 'int main() { return  12 + 34 - 5 ; }'
