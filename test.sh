@@ -13,7 +13,7 @@ assert() {
   expected="$1"
   input="$2"
 
-  ./nsc "$input" > tmp.s || exit
+  echo "$input" | ./nsc - > tmp.s || exit
   gcc -static -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
