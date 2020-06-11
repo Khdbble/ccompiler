@@ -42,13 +42,14 @@ Token *tokenize(char *input);
 // parse.c
 //
 
-// Local variable
+// Variable
 typedef struct Var Var;
 struct Var {
     Var *next;
-    char *name;  // Variable name
-    Type *ty;    // Type
-    int offset;  // Offset from RBP
+    char *name;     // Variable name
+    Type *ty;       // Type
+    int offset;     // Offset from RBP
+    bool is_local;  // local or global
 };
 
 // AST node
@@ -114,7 +115,12 @@ struct Function {
     int stack_size;
 };
 
-Function *parse(Token *tok);
+typedef struct {
+    Var *globals;
+    Function *fns;
+} Program;
+
+Program *parse(Token *tok);
 
 //
 // typing.c
@@ -157,4 +163,4 @@ void add_type(Node *node);
 // codegen.c
 //
 
-void codegen(Function *prog);
+void codegen(Program *prog);
