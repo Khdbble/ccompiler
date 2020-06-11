@@ -258,6 +258,23 @@ Token *tokenize(char *filename, char *p) {
             continue;
         }
 
+        // Skip line comments.
+        if (startswith(p, "//")) {
+            p += 2;
+            while (*p != '\n')
+                p++;
+            continue;
+        }
+
+        // Skip block comments.
+        if (startswith(p, "/*")) {
+            char *q = strstr(p + 2, "*/");
+            if (!q)
+                error_at(p, "unclosed block comment");
+            p = q + 2;
+            continue;
+        }
+
         // String literal
         if (*p == '"') {
             cur = read_string_literal(cur, p);
