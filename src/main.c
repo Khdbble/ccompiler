@@ -1,9 +1,5 @@
 #include "nsc.h"
 
-static int align_to(int n, int align) {
-    return (n + align - 1) & ~(align - 1);
-}
-
 // Returns the contents of a given file.
 static char *read_file(char *path) {
     // By convention, read from stdin if a given filename is "-".
