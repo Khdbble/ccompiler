@@ -131,6 +131,8 @@ static bool is_keyword(Token *tok) {
         "char",
         "struct",
         "union",
+        "short",
+        "long",
     };
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
