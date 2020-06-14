@@ -3,6 +3,7 @@
 static int top;
 static int labelseq = 1;
 static char *argreg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
+static char *argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 static char *argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 static char *funcname;
 
@@ -52,6 +53,8 @@ static void load(Type *ty) {
     char *r = reg(top - 1);
     if (ty->size == 1)
         printf("  movsx %s, byte ptr [%s]\n", r, r);
+    else if (ty->size == 4)
+        printf("  movsx %s, dword ptr [%s]\n", r, r);
     else
         printf("  mov %s, [%s]\n", r, r);
 }
@@ -67,6 +70,8 @@ static void store(Type *ty) {
         }
     } else if (ty->size == 1) {
         printf("  mov [%s], %sb\n", rd, rs);
+    } else if (ty->size == 4) {
+        printf("  mov [%s], %sd\n", rd, rs);
     } else {
         printf("  mov [%s], %s\n", rd, rs);
     }
@@ -273,6 +278,15 @@ static void emit_data(Program *prog) {
     }
 }
 
+static char *get_argreg(int sz, int idx) {
+    if (sz == 1)
+        return argreg8[idx];
+    if (sz == 4)
+        return argreg32[idx];
+    assert(sz == 8);
+    return argreg64[idx];
+}
+
 static void emit_text(Program *prog) {
     printf(".text\n");
 
@@ -295,10 +309,8 @@ static void emit_text(Program *prog) {
         for (Var *var = fn->params; var; var = var->next)
             i++;
         for (Var *var = fn->params; var; var = var->next) {
-            if (var->ty->size == 1)
-                printf("  mov [rbp-%d], %s\n", var->offset, argreg8[--i]);
-            else
-                printf("  mov [rbp-%d], %s\n", var->offset, argreg64[--i]);
+            char *r = get_argreg(var->ty->size, --i);
+            printf("  mov [rbp-%d], %s\n", var->offset, r);
         }
 
         // Emit code
