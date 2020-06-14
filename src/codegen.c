@@ -52,11 +52,13 @@ static void load(Type *ty) {
     }
 
     char *r = reg(top - 1);
-    if (ty->size == 1)
+    int sz = size_of(ty);
+
+    if (sz == 1)
         printf("  movsx %s, byte ptr [%s]\n", r, r);
-    else if (ty->size == 2)
+    else if (sz == 2)
         printf("  movsx %s, word ptr [%s]\n", r, r);
-    else if (ty->size == 4)
+    else if (sz == 4)
         printf("  movsx %s, dword ptr [%s]\n", r, r);
     else
         printf("  mov %s, [%s]\n", r, r);
@@ -65,17 +67,18 @@ static void load(Type *ty) {
 static void store(Type *ty) {
     char *rd = reg(top - 1);
     char *rs = reg(top - 2);
+    int sz = size_of(ty);
 
     if (ty->kind == TY_STRUCT) {
-        for (int i = 0; i < ty->size; i++) {
+        for (int i = 0; i < sz; i++) {
             printf("  mov al, [%s+%d]\n", rs, i);
             printf("  mov [%s+%d], al\n", rd, i);
         }
-    } else if (ty->size == 1) {
+    } else if (sz == 1) {
         printf("  mov [%s], %sb\n", rd, rs);
-    } else if (ty->size == 2) {
+    } else if (sz == 2) {
         printf("  mov [%s], %sw\n", rd, rs);
-    } else if (ty->size == 4) {
+    } else if (sz == 4) {
         printf("  mov [%s], %sd\n", rd, rs);
     } else {
         printf("  mov [%s], %s\n", rd, rs);
@@ -274,7 +277,7 @@ static void emit_data(Program *prog) {
     for (Var *var = prog->globals; var; var = var->next) {
         printf("%s:\n", var->name);
         if (!var->contents) {
-            printf("  .zero %d\n", var->ty->size);
+            printf("  .zero %d\n", size_of(var->ty));
             continue;
         }
 
@@ -316,7 +319,7 @@ static void emit_text(Program *prog) {
         for (Var *var = fn->params; var; var = var->next)
             i++;
         for (Var *var = fn->params; var; var = var->next) {
-            char *r = get_argreg(var->ty->size, --i);
+            char *r = get_argreg(size_of(var->ty), --i);
             printf("  mov [rbp-%d], %s\n", var->offset, r);
         }
 
