@@ -134,6 +134,7 @@ static bool is_keyword(Token *tok) {
         "short",
         "long",
         "void",
+        "typedef",
     };
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
