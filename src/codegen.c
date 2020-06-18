@@ -6,7 +6,7 @@ static char *argreg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 static char *argreg16[] = {"di", "si", "dx", "cx", "r8w", "r9w"};
 static char *argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 static char *argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
-static char *funcname;
+static Function *current_fn;
 
 static char *reg(int idx) {
     static char *r[] = {"r10", "r11", "r12", "r13", "r14", "r15"};
@@ -15,7 +15,7 @@ static char *reg(int idx) {
     return r[idx];
 }
 
-static char *regx(Type *ty, int idx) {
+static char *xreg(Type *ty, int idx) {
     if (ty->base || size_of(ty) == 8)
         return reg(idx);
 
@@ -40,6 +40,11 @@ static void gen_addr(Node *node) {
         case ND_DEREF:
             gen_expr(node->lhs);
             return;
+        case ND_COMMA:
+            gen_expr(node->lhs);
+            top--;
+            gen_addr(node->rhs);
+            return;
         case ND_MEMBER:
             gen_addr(node->lhs);
             printf("  add %s, %d\n", reg(top - 1), node->member->offset);
@@ -62,7 +67,7 @@ static void load(Type *ty) {
     }
 
     char *rs = reg(top - 1);
-    char *rd = regx(ty, top - 1);
+    char *rd = xreg(ty, top - 1);
     int sz = size_of(ty);
 
     // When we load a char or a short value to a register, we always
@@ -99,6 +104,7 @@ static void store(Type *ty) {
     } else {
         printf("  mov [%s], %s\n", rd, rs);
     }
+
     top--;
 }
 
@@ -107,24 +113,24 @@ static void cast(Type *from, Type *to) {
         return;
 
     char *r = reg(top - 1);
-    ;
+
     if (size_of(to) == 1)
         printf("  movsx %s, %sb\n", r, r);
     else if (size_of(to) == 2)
         printf("  movsx %s, %sw\n", r, r);
     else if (size_of(to) == 4)
         printf("  mov %sd, %sd\n", r, r);
-    else if (!from->base && size_of(from) < 8)
+    else if (is_integer(from) && size_of(from) < 8)
         printf("  movsx %s, %sd\n", r, r);
 }
 
 // Generate code for a given node.
 static void gen_expr(Node *node) {
-    printf(".loc 1 %d\n", node->tok->lineno);
+    printf(".loc 1 %d\n", node->tok->line_no);
 
     switch (node->kind) {
         case ND_NUM:
-            printf("  mov %s, %ld\n", reg(top++), node->val);
+            printf("  mov %s, %lu\n", reg(top++), node->val);
             return;
         case ND_VAR:
         case ND_MEMBER:
@@ -151,50 +157,42 @@ static void gen_expr(Node *node) {
                 gen_stmt(n);
             top++;
             return;
+        case ND_NULL_EXPR:
+            top++;
+            return;
+        case ND_COMMA:
+            gen_expr(node->lhs);
+            top--;
+            gen_expr(node->rhs);
+            return;
         case ND_CAST:
             gen_expr(node->lhs);
             cast(node->lhs->ty, node->ty);
             return;
         case ND_FUNCALL: {
-            // Save all temporary registers to the stack before evaluating
-            // function arguments to allow each argument evaluation to use all
-            // temporary registers. This is a workaround for a register
-            // exhaustion issue when evaluating a long expression containing
-            // multiple function calls.
-            int top_orig = top;
-            top = 0;
-
+            // Save caller-saved registers
             printf("  push r10\n");
             printf("  push r11\n");
-            printf("  push r12\n");
-            printf("  push r13\n");
-            printf("  push r14\n");
-            printf("  push r15\n");
 
-            int nargs = 0;
-            for (Node *arg = node->args; arg; arg = arg->next) {
-                gen_expr(arg);
-                printf("  push %s\n", reg(--top));
-                printf("  sub rsp, 8\n");
-                nargs++;
-            }
+            // Load arguments from the stack.
+            for (int i = 0; i < node->nargs; i++) {
+                Var *arg = node->args[i];
+                int sz = size_of(arg->ty);
 
-            for (int i = nargs - 1; i >= 0; i--) {
-                printf("  add rsp, 8\n");
-                printf("  pop %s\n", argreg64[i]);
+                if (sz == 1)
+                    printf("  movsx %s, byte ptr [rbp-%d]\n", argreg32[i], arg->offset);
+                else if (sz == 2)
+                    printf("  movsx %s, word ptr [rbp-%d]\n", argreg32[i], arg->offset);
+                else if (sz == 4)
+                    printf("  mov %s, dword ptr [rbp-%d]\n", argreg32[i], arg->offset);
+                else
+                    printf("  mov %s, [rbp-%d]\n", argreg64[i], arg->offset);
             }
 
             printf("  mov rax, 0\n");
             printf("  call %s\n", node->funcname);
-
-            top = top_orig;
-            printf("  pop r15\n");
-            printf("  pop r14\n");
-            printf("  pop r13\n");
-            printf("  pop r12\n");
             printf("  pop r11\n");
             printf("  pop r10\n");
-
             printf("  mov %s, rax\n", reg(top++));
             return;
         }
@@ -203,8 +201,8 @@ static void gen_expr(Node *node) {
     gen_expr(node->lhs);
     gen_expr(node->rhs);
 
-    char *rd = regx(node->lhs->ty, top - 2);
-    char *rs = regx(node->lhs->ty, top - 1);
+    char *rd = xreg(node->lhs->ty, top - 2);
+    char *rs = xreg(node->lhs->ty, top - 1);
     top--;
 
     switch (node->kind) {
@@ -256,7 +254,7 @@ static void gen_expr(Node *node) {
 }
 
 static void gen_stmt(Node *node) {
-    printf(".loc 1 %d\n", node->tok->lineno);
+    printf(".loc 1 %d\n", node->tok->line_no);
 
     switch (node->kind) {
         case ND_IF: {
@@ -303,7 +301,7 @@ static void gen_stmt(Node *node) {
         case ND_RETURN:
             gen_expr(node->lhs);
             printf("  mov rax, %s\n", reg(--top));
-            printf("  jmp .L.return.%s\n", funcname);
+            printf("  jmp .L.return.%s\n", current_fn->name);
             return;
         case ND_EXPR_STMT:
             gen_expr(node->lhs);
@@ -319,13 +317,14 @@ static void emit_data(Program *prog) {
 
     for (Var *var = prog->globals; var; var = var->next) {
         printf("%s:\n", var->name);
-        if (!var->contents) {
+
+        if (!var->init_data) {
             printf("  .zero %d\n", size_of(var->ty));
             continue;
         }
 
-        for (int i = 0; i < var->cont_len; i++)
-            printf("  .byte %d\n", var->contents[i]);
+        for (int i = 0; i < var->ty->size; i++)
+            printf("  .byte %d\n", var->init_data[i]);
     }
 }
 
@@ -346,7 +345,7 @@ static void emit_text(Program *prog) {
     for (Function *fn = prog->fns; fn; fn = fn->next) {
         printf(".globl %s\n", fn->name);
         printf("%s:\n", fn->name);
-        funcname = fn->name;
+        current_fn = fn;
 
         // Prologue. r12-15 are callee-saved registers.
         printf("  push rbp\n");
@@ -361,6 +360,7 @@ static void emit_text(Program *prog) {
         int i = 0;
         for (Var *var = fn->params; var; var = var->next)
             i++;
+
         for (Var *var = fn->params; var; var = var->next) {
             char *r = get_argreg(size_of(var->ty), --i);
             printf("  mov [rbp-%d], %s\n", var->offset, r);
@@ -373,7 +373,7 @@ static void emit_text(Program *prog) {
         }
 
         // Epilogue
-        printf(".L.return.%s:\n", funcname);
+        printf(".L.return.%s:\n", fn->name);
         printf("  mov r12, [rbp-8]\n");
         printf("  mov r13, [rbp-16]\n");
         printf("  mov r14, [rbp-24]\n");

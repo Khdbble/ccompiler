@@ -17,8 +17,12 @@ static Type *new_type(TypeKind kind, int size, int align) {
 
 bool is_integer(Type *ty) {
     TypeKind k = ty->kind;
-    return k == TY_CHAR || k == TY_SHORT ||
-           k == TY_INT || k == TY_LONG;
+    return k == TY_CHAR || k == TY_SHORT || k == TY_INT ||
+           k == TY_LONG;
+}
+
+static bool is_scalar(Type *ty) {
+    return is_integer(ty) || ty->base;
 }
 
 Type *copy_type(Type *ty) {
@@ -65,6 +69,13 @@ static Type *get_common_type(Type *ty1, Type *ty2) {
     return ty_int;
 }
 
+// For many binary operators, we implicitly promote operands so that
+// both operands have the same type. Any integral type smaller than
+// int is always promoted to int. If the type of one operand is than
+// the other's (e.g. "long" vs. "int"), the smaller operand will be
+// promoted to match with the other.
+//
+// This operation is called the "usual arithmetic conversion".
 static void usual_arith_conv(Node **lhs, Node **rhs) {
     Type *ty = get_common_type((*lhs)->ty, (*rhs)->ty);
     *lhs = new_cast(*lhs, ty);
@@ -84,8 +95,6 @@ void add_type(Node *node) {
     add_type(node->inc);
 
     for (Node *n = node->body; n; n = n->next)
-        add_type(n);
-    for (Node *n = node->args; n; n = n->next)
         add_type(n);
 
     switch (node->kind) {
@@ -107,11 +116,15 @@ void add_type(Node *node) {
             node->ty = ty_int;
             return;
         case ND_ASSIGN:
-            node->rhs = new_cast(node->rhs, node->lhs->ty);
+            if (is_scalar(node->rhs->ty))
+                node->rhs = new_cast(node->rhs, node->lhs->ty);
             node->ty = node->lhs->ty;
             return;
         case ND_VAR:
             node->ty = node->var->ty;
+            return;
+        case ND_COMMA:
+            node->ty = node->rhs->ty;
             return;
         case ND_MEMBER:
             node->ty = node->member->ty;

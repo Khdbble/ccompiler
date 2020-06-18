@@ -168,7 +168,7 @@ static Var *new_gvar(char *name, Type *ty, bool emit) {
     return var;
 }
 
-static char *new_label(void) {
+static char *new_gvar_name(void) {
     static int cnt = 0;
     char *buf = malloc(20);
     sprintf(buf, ".L.data.%d", cnt++);
@@ -177,9 +177,8 @@ static char *new_label(void) {
 
 static Var *new_string_literal(char *p, int len) {
     Type *ty = array_of(ty_char, len);
-    Var *var = new_gvar(new_label(), ty, true);
-    var->contents = p;
-    var->cont_len = len;
+    Var *var = new_gvar(new_gvar_name(), ty, true);
+    var->init_data = p;
     return var;
 }
 
@@ -231,7 +230,6 @@ static Function *funcdef(Token **rest, Token *tok) {
     tok = skip(tok, "{");
     fn->node = compound_stmt(rest, tok)->body;
     fn->locals = locals;
-
     leave_scope();
     return fn;
 }
@@ -292,6 +290,7 @@ static Type *typespec(Token **rest, Token *tok, VarAttr *attr) {
                 ty = ty2;
                 tok = tok->next;
             }
+
             counter += OTHER;
             continue;
         }
@@ -342,7 +341,7 @@ static Type *typespec(Token **rest, Token *tok, VarAttr *attr) {
 }
 
 // func-params = (param ("," param)*)? ")"
-// param       = typename declarator
+// param       = typespec declarator
 static Type *func_params(Token **rest, Token *tok, Type *ty) {
     Type head = {};
     Type *cur = &head;
@@ -550,7 +549,6 @@ static Node *stmt(Token **rest, Token *tok) {
 // compound-stmt = (declaration | stmt)* "}"
 static Node *compound_stmt(Token **rest, Token *tok) {
     Node *node = new_node(ND_BLOCK, tok);
-
     Node head = {};
     Node *cur = &head;
 
@@ -578,9 +576,15 @@ static Node *expr_stmt(Token **rest, Token *tok) {
     return node;
 }
 
-// expr = assign
+// expr = assign ("," expr)?
 static Node *expr(Token **rest, Token *tok) {
-    return assign(rest, tok);
+    Node *node = assign(&tok, tok);
+
+    if (equal(tok, ","))
+        return new_binary(ND_COMMA, node, expr(rest, tok->next), tok);
+
+    *rest = tok;
+    return node;
 }
 
 // assign = equality ("=" assign)?
@@ -599,15 +603,15 @@ static Node *equality(Token **rest, Token *tok) {
     Node *node = relational(&tok, tok);
 
     for (;;) {
+        Token *start = tok;
+
         if (equal(tok, "==")) {
-            node = new_binary(ND_EQ, node, NULL, tok);
-            node->rhs = relational(&tok, tok->next);
+            node = new_binary(ND_EQ, node, relational(&tok, tok->next), start);
             continue;
         }
 
         if (equal(tok, "!=")) {
-            node = new_binary(ND_NE, node, NULL, tok);
-            node->rhs = relational(&tok, tok->next);
+            node = new_binary(ND_NE, node, relational(&tok, tok->next), start);
             continue;
         }
 
@@ -621,27 +625,25 @@ static Node *relational(Token **rest, Token *tok) {
     Node *node = add(&tok, tok);
 
     for (;;) {
+        Token *start = tok;
+
         if (equal(tok, "<")) {
-            node = new_binary(ND_LT, node, NULL, tok);
-            node->rhs = add(&tok, tok->next);
+            node = new_binary(ND_LT, node, add(&tok, tok->next), start);
             continue;
         }
 
         if (equal(tok, "<=")) {
-            node = new_binary(ND_LE, node, NULL, tok);
-            node->rhs = add(&tok, tok->next);
+            node = new_binary(ND_LE, node, add(&tok, tok->next), start);
             continue;
         }
 
         if (equal(tok, ">")) {
-            node = new_binary(ND_LT, NULL, node, tok);
-            node->lhs = add(&tok, tok->next);
+            node = new_binary(ND_LT, add(&tok, tok->next), node, start);
             continue;
         }
 
         if (equal(tok, ">=")) {
-            node = new_binary(ND_LE, NULL, node, tok);
-            node->lhs = add(&tok, tok->next);
+            node = new_binary(ND_LE, add(&tok, tok->next), node, start);
             continue;
         }
 
@@ -729,15 +731,15 @@ static Node *mul(Token **rest, Token *tok) {
     Node *node = cast(&tok, tok);
 
     for (;;) {
+        Token *start = tok;
+
         if (equal(tok, "*")) {
-            node = new_binary(ND_MUL, node, NULL, tok);
-            node->rhs = cast(&tok, tok->next);
+            node = new_binary(ND_MUL, node, cast(&tok, tok->next), start);
             continue;
         }
 
         if (equal(tok, "/")) {
-            node = new_binary(ND_DIV, node, NULL, tok);
-            node->rhs = cast(&tok, tok->next);
+            node = new_binary(ND_DIV, node, cast(&tok, tok->next), start);
             continue;
         }
 
@@ -749,7 +751,7 @@ static Node *mul(Token **rest, Token *tok) {
 // cast = "(" type-name ")" cast | unary
 static Node *cast(Token **rest, Token *tok) {
     if (equal(tok, "(") && is_typename(tok->next)) {
-        Node *node = new_unary(ND_CAST, NULL, tok);
+        Node *node = new_node(ND_CAST, tok);
         node->ty = typename(&tok, tok->next);
         tok = skip(tok, ")");
         node->lhs = cast(rest, tok);
@@ -916,19 +918,63 @@ static Node *postfix(Token **rest, Token *tok) {
     }
 }
 
-// func-args = "(" (assign ("," assign)*)? ")"
-static Node *func_args(Token **rest, Token *tok) {
-    Node head = {};
-    Node *cur = &head;
+// funcall = ident "(" (assign ("," assign)*)? ")"
+//
+// foo(a,b,c) is compiled to ({ t1=a; t2=b; t3=c; foo(t1, t2, t3); })
+// where t1, t2 and t3 are fresh local variables.
+static Node *funcall(Token **rest, Token *tok) {
+    Token *start = tok;
+    tok = tok->next->next;
+
+    VarScope *sc = find_var(start);
+    Type *ty;
+    if (sc) {
+        if (!sc->var || sc->var->ty->kind != TY_FUNC)
+            error_tok(start, "not a function");
+        ty = sc->var->ty;
+    } else {
+        warn_tok(start, "implicit declaration of a function");
+        ty = func_type(ty_int);
+    }
+
+    Node *node = new_node(ND_NULL_EXPR, tok);
+    Var **args = NULL;
+    int nargs = 0;
+    Type *param_ty = ty->params;
 
     while (!equal(tok, ")")) {
-        if (cur != &head)
+        if (nargs)
             tok = skip(tok, ",");
-        cur = cur->next = assign(&tok, tok);
+
+        Node *arg = assign(&tok, tok);
+        add_type(arg);
+
+        if (param_ty) {
+            arg = new_cast(arg, param_ty);
+            param_ty = param_ty->next;
+        }
+
+        Var *var = arg->ty->base
+                       ? new_lvar("", pointer_to(arg->ty->base))
+                       : new_lvar("", arg->ty);
+
+        args = realloc(args, sizeof(*args) * (nargs + 1));
+        args[nargs] = var;
+        nargs++;
+
+        Node *expr = new_binary(ND_ASSIGN, new_var_node(var, tok), arg, tok);
+        node = new_binary(ND_COMMA, node, expr, tok);
     }
 
     *rest = skip(tok, ")");
-    return head.next;
+
+    Node *funcall = new_node(ND_FUNCALL, start);
+    funcall->funcname = strndup(start->loc, start->len);
+    funcall->func_ty = ty;
+    funcall->ty = ty->return_ty;
+    funcall->args = args;
+    funcall->nargs = nargs;
+    return new_binary(ND_COMMA, node, funcall, tok);
 }
 
 // primary = "(" "{" stmt stmt* "}" ")"
@@ -974,24 +1020,8 @@ static Node *primary(Token **rest, Token *tok) {
 
     if (tok->kind == TK_IDENT) {
         // Function call
-        if (equal(tok->next, "(")) {
-            Node *node = new_node(ND_FUNCALL, tok);
-            VarScope *sc = find_var(tok);
-
-            node->funcname = strndup(tok->loc, tok->len);
-            node->args = func_args(rest, tok->next->next);
-            add_type(node);
-
-            if (sc) {
-                if (!sc->var || sc->var->ty->kind != TY_FUNC)
-                    error_tok(tok, "not a function");
-                node->ty = sc->var->ty->return_ty;
-            } else {
-                warn_tok(node->tok, "implicit declaration of a function");
-                node->ty = ty_int;
-            }
-            return node;
-        }
+        if (equal(tok->next, "("))
+            return funcall(rest, tok);
 
         // Variable
         VarScope *sc = find_var(tok);

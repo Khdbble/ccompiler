@@ -20,7 +20,7 @@ typedef enum {
     TK_RESERVED,  // Keywords or punctuators
     TK_IDENT,     // Identifiers
     TK_STR,       // String literals
-    TK_NUM,       // Integer literals
+    TK_NUM,       // Numeric literals
     TK_EOF,       // End-of-file markers
 } TokenKind;
 
@@ -36,7 +36,7 @@ struct Token {
     char *contents;  // String literal contents including terminating '\0'
     char cont_len;   // string literal length
 
-    int lineno;  // Line number
+    int line_no;  // Line number
 };
 
 void error(char *fmt, ...);
@@ -45,7 +45,7 @@ void warn_tok(Token *tok, char *fmt, ...);
 bool equal(Token *tok, char *op);
 Token *skip(Token *tok, char *op);
 bool consume(Token **rest, Token *tok, char *str);
-Token *tokenize(char *filename, char *input);
+Token *tokenize_file(char *filename);
 
 //
 // parse.c
@@ -63,8 +63,7 @@ struct Var {
     int offset;
 
     // Global variable
-    char *contents;
-    int cont_len;
+    char *init_data;
 };
 
 // AST node
@@ -78,6 +77,7 @@ typedef enum {
     ND_LT,         // <
     ND_LE,         // <=
     ND_ASSIGN,     // =
+    ND_COMMA,      // ,
     ND_MEMBER,     // . (struct member access)
     ND_ADDR,       // unary &
     ND_DEREF,      // unary *
@@ -88,6 +88,7 @@ typedef enum {
     ND_FUNCALL,    // Function call
     ND_EXPR_STMT,  // Expression statement
     ND_STMT_EXPR,  // Statement expression
+    ND_NULL_EXPR,  // Do nothing
     ND_VAR,        // Variable
     ND_NUM,        // Integer
     ND_CAST,       // Type cast
@@ -119,7 +120,9 @@ struct Node {
 
     // Function call
     char *funcname;
-    Node *args;
+    Type *func_ty;
+    Var **args;
+    int nargs;
 
     Var *var;  // Used if kind == ND_VAR
     long val;  // Used if kind == ND_NUM
@@ -165,7 +168,14 @@ struct Type {
     int size;   // sizeof() value
     int align;  // alignment
 
-    // Pointer or array
+    // Pointer-to or array-of type. We intentionally use the same member
+    // to represent pointer/array duality in C.
+    //
+    // In many contexts in which a pointer is expected, we examine this
+    // member instead of "kind" member to determine whether a type is a
+    // pointer or not. That means in many contexts "array of T" is
+    // naturally handled as if it were "pointer to T", as required by
+    // the C spec.
     Type *base;
 
     // Declaration
