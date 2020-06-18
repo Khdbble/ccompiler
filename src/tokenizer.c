@@ -12,15 +12,13 @@ void error(char *fmt, ...) {
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
-    exit(1);
 }
 
-// Reports an error message in the following format and exit.
+// Reports an error message in the following format.
 //
 // foo.c:10: x = y + 1;
 //               ^ <error message here>
-static void
-verror_at(int lineno, char *loc, char *fmt, va_list ap) {
+static void verror_at(int lineno, char *loc, char *fmt, va_list ap) {
     // Find a line containing `loc`.
     char *line = loc;
     while (current_input < line && line[-1] != '\n')
@@ -53,9 +51,17 @@ static void error_at(char *loc, char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     verror_at(lineno, loc, fmt, ap);
+    exit(1);
 }
 
 void error_tok(Token *tok, char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    verror_at(tok->lineno, tok->loc, fmt, ap);
+    exit(1);
+}
+
+void warn_tok(Token *tok, char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     verror_at(tok->lineno, tok->loc, fmt, ap);
