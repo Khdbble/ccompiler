@@ -592,6 +592,7 @@ static bool is_typename(Token *tok) {
 //      | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
 //      | "while" "(" expr ")" stmt
 //      | "break" ";"
+//      | "continue" ";"
 //      | "{" compound-stmt
 //      | expr ";"
 static Node *stmt(Token **rest, Token *tok) {
@@ -656,6 +657,11 @@ static Node *stmt(Token **rest, Token *tok) {
     if (equal(tok, "break")) {
         *rest = skip(tok->next, ";");
         return new_node(ND_BREAK, tok);
+    }
+
+    if (equal(tok, "continue")) {
+        *rest = skip(tok->next, ";");
+        return new_node(ND_CONTINUE, tok);
     }
 
     if (equal(tok, "{"))
