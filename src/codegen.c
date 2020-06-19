@@ -387,7 +387,7 @@ static void emit_data(Program *prog) {
             continue;
         }
 
-        for (int i = 0; i < var->ty->size; i++)
+        for (int i = 0; i < size_of(var->ty); i++)
             printf("  .byte %d\n", var->init_data[i]);
     }
 }
