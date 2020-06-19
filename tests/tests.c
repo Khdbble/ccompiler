@@ -85,8 +85,8 @@ int main() {
     assert(15, 5 * (9 - 6), "5*(9-6)");
     assert(4, (3 + 5) / 2, "(3+5)/2");
     assert(10, -10 + 20, "-10+20");
-    assert(10, - -10, "- -10");
-    assert(10, - - +10, "- - +10");
+    assert(10, -(-10), "- -10");
+    assert(10, -(-(+10)), "- - +10");
 
     assert(0, 0 == 1, "0==1");
     assert(1, 42 == 42, "42==42");
@@ -466,6 +466,18 @@ int main() {
     assert(0, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p=a+1; (*p++)--; a[1]; }), "({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p=a+1; (*p++)--; a[1]; })");
     assert(2, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p=a+1; (*p++)--; a[2]; }), "({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p=a+1; (*p++)--; a[2]; })");
     assert(2, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p=a+1; (*p++)--; *p; }), "({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p=a+1; (*p++)--; *p; })");
+
+    assert(511, 0777, "0777");
+    assert(0, 0x0, "0x0");
+    assert(10, 0xa, "0xa");
+    assert(10, 0XA, "0XA");
+    assert(48879, 0xbeef, "0xbeef");
+    assert(48879, 0xBEEF, "0xBEEF");
+    assert(48879, 0XBEEF, "0XBEEF");
+    assert(0, 0b0, "0b0");
+    assert(1, 0b1, "0b1");
+    assert(47, 0b101111, "0b101111");
+    assert(47, 0B101111, "0B101111");
 
     printf("OK\n");
     return 0;
