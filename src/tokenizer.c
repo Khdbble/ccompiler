@@ -310,7 +310,6 @@ static void add_line_info(Token *tok) {
 static Token *tokenize(char *filename, char *p) {
     current_filename = filename;
     current_input = p;
-
     Token head = {};
     Token *cur = &head;
 
@@ -332,13 +331,6 @@ static Token *tokenize(char *filename, char *p) {
             continue;
         }
 
-        // Character literal
-        if (*p == '\'') {
-            cur = read_char_literal(cur, p);
-            p += cur->len;
-            continue;
-        }
-
         // Skip whitespace characters.
         if (isspace(*p)) {
             p++;
@@ -355,6 +347,13 @@ static Token *tokenize(char *filename, char *p) {
         // String literal
         if (*p == '"') {
             cur = read_string_literal(cur, p);
+            p += cur->len;
+            continue;
+        }
+
+        // Character literal
+        if (*p == '\'') {
+            cur = read_char_literal(cur, p);
             p += cur->len;
             continue;
         }
