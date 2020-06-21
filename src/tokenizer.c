@@ -150,6 +150,7 @@ static bool is_keyword(Token *tok) {
         "switch",
         "case",
         "default",
+        "extern",
     };
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)

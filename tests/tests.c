@@ -47,6 +47,9 @@ struct {
 char g33[][4] = {'f', 'o', 'o', 0, 'b', 'a', 'r', 0};
 char *g34 = {"foo"};
 
+extern int ext1;
+extern int *ext2;
+
 int assert(long expected, long actual, char *code) {
     if (expected == actual) {
         printf("%s => %ld\n", code, actual);
@@ -763,6 +766,12 @@ int main() {
     assert(3, ({ int a[]={1,2,3,}; a[2]; }), "({ int a[]={1,2,3,}; a[2]; })");
     assert(1, ({ struct {int a,b,c;} x={1,2,3,}; x.a; }), "({ struct {int a,b,c;} x={1,2,3,}; x.a; })");
     assert(2, ({ enum {x,y,z,}; z; }), "({ enum {x,y,z,}; z; })");
+
+    ext1 = 5;
+    assert(5, ext1, "ext1");
+
+    ext2 = &ext1;
+    assert(5, *ext2, "*ext2");
 
     printf("OK\n");
     return 0;
