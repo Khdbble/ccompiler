@@ -643,6 +643,16 @@ static Node *declaration(Token **rest, Token *tok) {
             continue;
         }
 
+        if (attr.is_static) {
+            // static local variable
+            Var *var = new_gvar(new_gvar_name(), ty, true);
+            push_scope(get_ident(ty->name))->var = var;
+
+            if (equal(tok, "="))
+                gvar_initializer(&tok, tok->next, var);
+            continue;
+        }
+
         Var *var = new_lvar(get_ident(ty->name), ty);
         if (attr.align)
             var->align = attr.align;
@@ -1198,7 +1208,7 @@ static long eval2(Node *node, Var **var) {
         case ND_NUM:
             return node->val;
         case ND_ADDR:
-            if (!var || *var || node->lhs->kind != ND_VAR)
+            if (!var || *var || node->lhs->kind != ND_VAR || node->lhs->var->is_local)
                 error_tok(node->tok, "invalid initializer");
             *var = node->lhs->var;
             return 0;

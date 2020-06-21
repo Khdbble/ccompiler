@@ -129,6 +129,12 @@ static int static_fn() { return 3; }
 
 int param_decay(int x[]) { return x[0]; }
 
+int counter() {
+    static int i;
+    static int j = 1 + 1;
+    return i++ + j++;
+}
+
 int main() {
     assert(0, 0, "0");
     assert(42, 42, "42");
@@ -806,6 +812,10 @@ int main() {
     assert(8, ({ struct T { _Alignas(8) char a; }; alignof(struct T); }), "({ struct T { _Alignas(8) char a; }; alignof(struct T); })");
     assert(0, (long)(char *)&g_aligned1 % 512, "(long)(char *)&g_aligned1 % 512");
     assert(0, (long)(char *)&g_aligned2 % 512, "(long)(char *)&g_aligned2 % 512");
+
+    assert(2, counter(), "counter()");
+    assert(4, counter(), "counter()");
+    assert(6, counter(), "counter()");
 
     printf("OK\n");
     return 0;
