@@ -151,6 +151,7 @@ static bool is_keyword(Token *tok) {
         "case",
         "default",
         "extern",
+        "alignof",
     };
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
