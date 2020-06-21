@@ -930,6 +930,7 @@ static bool is_typename(Token *tok) {
 //      | "break" ";"
 //      | "continue" ";"
 //      | "goto" ident ";"
+//      | ";"
 //      | ident ":" stmt
 //      | "{" compound-stmt
 //      | expr ";"
@@ -1044,6 +1045,12 @@ static Node *stmt(Token **rest, Token *tok) {
         Node *node = new_node(ND_GOTO, tok);
         node->label_name = get_ident(tok->next);
         *rest = skip(tok->next->next, ";");
+        return node;
+    }
+
+    if (equal(tok, ";")) {
+        Node *node = new_node(ND_BLOCK, tok);
+        *rest = tok->next;
         return node;
     }
 
