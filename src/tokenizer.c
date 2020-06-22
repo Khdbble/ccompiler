@@ -155,6 +155,7 @@ static bool is_keyword(Token *tok) {
         "_Alignas",
         "do",
         "signed",
+        "unsigned",
     };
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
