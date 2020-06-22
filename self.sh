@@ -51,8 +51,8 @@ cc() {
 
 nsc main.c
 nsc type.c
-nsc parse.c
+nsc parser.c
 nsc codegen.c
-cc tokenize.c
+cc tokenizer.c
 
 gcc -static -o chibicc-stage2 $TMP/*.o
