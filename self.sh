@@ -1,8 +1,11 @@
-#!/bin/bash -x
+#!/bin/bash
 set -e
 
-TMP=tmp-self
+TMP=$1
+CC=$2
+OUTPUT=$3
 
+rm -rf $TMP
 mkdir -p $TMP
 
 nsc() {
@@ -48,8 +51,8 @@ long strtoul(char *nptr, char **endptr, int base);
 void exit(int code);
 EOF
 
-    grep -v '^#' nsc.h >> $TMP/$1
-    grep -v '^#' $1 >> $TMP/$1
+    grep -v '^#' ./src/nsc.h >> $TMP/$1
+    grep -v '^#' ./src/$1 >> $TMP/$1
     sed -i 's/\bbool\b/_Bool/g' $TMP/$1
     sed -i 's/\berrno\b/*__errno_location()/g' $TMP/$1
     sed -i 's/\btrue\b/1/g; s/\bfalse\b/0/g;' $TMP/$1
@@ -57,7 +60,7 @@ EOF
     sed -i 's/INT_MAX/2147483647/g' $TMP/$1
     sed -i 's/\bva_start\b/__builtin_va_start/g' $TMP/$1
 
-    ./nsc $TMP/$1 > $TMP/${1%.c}.s
+    ($CC $TMP/$1 > $TMP/${1%.c}.s)
     gcc -c -o $TMP/${1%.c}.o $TMP/${1%.c}.s
 }
 
@@ -71,4 +74,4 @@ nsc parser.c
 nsc codegen.c
 nsc tokenizer.c
 
-gcc -static -o chibicc-stage2 $TMP/*.o
+(cd $TMP; gcc -static -o ../$OUTPUT *.o)
