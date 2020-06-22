@@ -147,6 +147,18 @@ static void divmod(Node *node, char *rd, char *rs, char *r64, char *r32) {
     }
 }
 
+static void builtin_va_start(Node *node) {
+    int n = 0;
+    for (Var *var = current_fn->params; var; var = var->next)
+        n++;
+
+    printf("  mov rax, [rbp-%d]\n", node->args[0]->offset);
+    printf("  mov dword ptr [rax], %d\n", n * 8);
+    printf("  mov [rax+16], rbp\n");
+    printf("  sub qword ptr [rax+16], 80\n");
+    top++;
+}
+
 // Generate code for a given node.
 static void gen_expr(Node *node) {
     printf(".loc 1 %d\n", node->tok->line_no);
@@ -246,6 +258,11 @@ static void gen_expr(Node *node) {
             return;
         }
         case ND_FUNCALL: {
+            if (!strcmp(node->funcname, "__builtin_va_start")) {
+                builtin_va_start(node);
+                return;
+            }
+
             // Save caller-saved registers
             printf("  push r10\n");
             printf("  push r11\n");
@@ -555,7 +572,17 @@ static void emit_text(Program *prog) {
         printf("  mov [rbp-24], r14\n");
         printf("  mov [rbp-32], r15\n");
 
-        // Save arguments to the stack
+        // Save arg registers if function is variadic
+        if (fn->is_variadic) {
+            printf("  mov [rbp-80], rdi\n");
+            printf("  mov [rbp-72], rsi\n");
+            printf("  mov [rbp-64], rdx\n");
+            printf("  mov [rbp-56], rcx\n");
+            printf("  mov [rbp-48], r8\n");
+            printf("  mov [rbp-40], r9\n");
+        }
+
+        // Push arguments to the stack
         int i = 0;
         for (Var *var = fn->params; var; var = var->next)
             i++;
