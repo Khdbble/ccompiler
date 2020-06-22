@@ -7,17 +7,22 @@ nsc: $(OBJS)
 
 $(OBJS): ./src/nsc.h
 
-simpletest: nsc
+nsc-stage2: nsc $(SRCS) nsc.h self.sh
+		./self.sh
+
+simpletest: nsc tests/extern.o
 		./nsc tests/tests.c > tmp.s
-		echo 'int ext1; int *ext2; int ext3 = 5; int char_fn() { return 257; }' \
-        	'int static_fn() { return 5; }' | \
-			gcc -xc -c -fno-common -o tmp2.o -
-		gcc -static -o tmp tmp.s tmp2.o
+		gcc -static -o tmp tmp.s tests/extern.o
+		./tmp
+
+test-stage2: nsc-stage2 tests/extern.o
+		./nsc-stage2 tests/tests.c > tmp.s
+		gcc -static -o tmp tmp.s tests/extern.o
 		./tmp
 
 
 clean:
-		rm -rf ./nsc ./src/*.o *~ ./tmp* tests/*~ tests/*.o
+		rm -rf ./nsc ./nsc-stage* ./src/*.o *~ ./tmp* tests/*~ tests/*.o
 
 test:
 		docker run --rm -v ${HOME}/documents/ccompiler:/ccompiler -w /ccompiler compiler make simpletest
