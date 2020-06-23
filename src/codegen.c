@@ -179,7 +179,10 @@ static void gen_expr(Node *node) {
 
     switch (node->kind) {
         case ND_NUM:
-            printf("  mov %s, %lu\n", reg(top++), node->val);
+            if (node->ty->kind == TY_LONG)
+                printf("  movabs %s, %lu\n", reg(top++), node->val);
+            else
+                printf("  mov %s, %lu\n", reg(top++), node->val);
             return;
         case ND_VAR:
         case ND_MEMBER:
