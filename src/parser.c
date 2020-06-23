@@ -302,14 +302,20 @@ static Function *funcdef(Token **rest, Token *tok) {
     Type *ty = typespec(&tok, tok, &attr);
     ty = declarator(&tok, tok, ty);
 
+    if (!ty->name)
+        error_tok(ty->name_pos, "function name omitted");
+
     Function *fn = calloc(1, sizeof(Function));
     fn->name = get_ident(ty->name);
     fn->is_static = attr.is_static;
     fn->is_variadic = ty->is_variadic;
 
     enter_scope();
-    for (Type *t = ty->params; t; t = t->next)
+    for (Type *t = ty->params; t; t = t->next) {
+        if (!t->name)
+            error_tok(t->name_pos, "parameter name omitted");
         new_lvar(get_ident(t->name), t);
+    }
     fn->params = locals;
 
     tok = skip(tok, "{");
@@ -599,10 +605,17 @@ static Type *declarator(Token **rest, Token *tok, Type *ty) {
         return new_ty;
     }
 
-    if (tok->kind != TK_IDENT)
-        error_tok(tok, "expected a variable name");
-    ty = type_suffix(rest, tok->next, ty);
-    ty->name = tok;
+    Token *name = NULL;
+    Token *name_pos = tok;
+
+    if (tok->kind == TK_IDENT) {
+        name = tok;
+        tok = tok->next;
+    }
+
+    ty = type_suffix(rest, tok, ty);
+    ty->name = name;
+    ty->name_pos = name_pos;
     return ty;
 }
 
@@ -708,6 +721,8 @@ static Node *declaration(Token **rest, Token *tok) {
             tok = skip(tok, ",");
 
         Type *ty = declarator(&tok, tok, basety);
+        if (!ty->name)
+            error_tok(ty->name_pos, "variable declared void");
         if (ty->kind == TY_VOID)
             error_tok(tok, "variable declared void");
 
@@ -2075,7 +2090,10 @@ Program *parse(Token *tok) {
         // Typedef
         if (attr.is_typedef) {
             for (;;) {
+                if (!ty->name)
+                    error_tok(ty->name_pos, "typedef name omitted");
                 push_scope(get_ident(ty->name))->type_def = ty;
+
                 if (consume(&tok, tok, ";"))
                     break;
                 tok = skip(tok, ",");
@@ -2094,6 +2112,9 @@ Program *parse(Token *tok) {
 
         // Global variable
         for (;;) {
+            if (!ty->name)
+                error_tok(ty->name_pos, "variable name omitted");
+
             Var *var = new_gvar(get_ident(ty->name), ty, attr.is_static, !attr.is_extern);
             if (attr.align)
                 var->align = attr.align;
