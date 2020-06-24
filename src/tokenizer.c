@@ -339,11 +339,35 @@ static Token *read_int_literal(Token *cur, char *start) {
             ty = ty_int;
     }
 
-    if (is_alnum(*p))
-        error_at(p, "invalid digit");
-
     Token *tok = new_token(TK_NUM, cur, start, p - start);
     tok->val = val;
+    tok->ty = ty;
+    return tok;
+}
+
+static Token *read_number(Token *cur, char *start) {
+    // Try to parse as an integer constant.
+    Token *tok = read_int_literal(cur, start);
+    if (!strchr(".eEfF", start[tok->len]))
+        return tok;
+
+    // If it's not an integer, it must be a floating point constant.
+    char *end;
+    double val = strtod(start, &end);
+
+    Type *ty;
+    if (*end == 'f' || *end == 'F') {
+        ty = ty_float;
+        end++;
+    } else if (*end == 'l' || *end == 'L') {
+        ty = ty_double;
+        end++;
+    } else {
+        ty = ty_double;
+    }
+
+    tok = new_token(TK_NUM, cur, start, end - start);
+    tok->fval = val;
     tok->ty = ty;
     return tok;
 }
@@ -401,8 +425,8 @@ static Token *tokenize(char *filename, char *p) {
         }
 
         // Numeric literal
-        if (isdigit(*p)) {
-            cur = read_int_literal(cur, p);
+        if (isdigit(*p) || (p[0] == '.' && isdigit(p[1]))) {
+            cur = read_number(cur, p);
             p += cur->len;
             continue;
         }

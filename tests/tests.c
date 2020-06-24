@@ -1066,6 +1066,19 @@ int main() {
 
     assert(5, (***add2)(2, 3), "(***add2)(2,3)");
 
+    0.0;
+    1.0;
+    3e+8;
+    0x10.1p0;
+    .1E4f;
+
+    assert(4, sizeof(8f), "sizeof(8f)");
+    assert(4, sizeof(0.3F), "sizeof(0.3F)");
+    assert(8, sizeof(0.), "sizeof(0.)");
+    assert(8, sizeof(.0), "sizeof(.0)");
+    assert(8, sizeof(5.l), "sizeof(5.l)");
+    assert(8, sizeof(2.0L), "sizeof(2.0L)");
+
     printf("OK\n");
     return 0;
 }

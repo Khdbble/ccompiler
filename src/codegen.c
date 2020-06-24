@@ -27,6 +27,13 @@ static char *xreg(Type *ty, int idx) {
     return r[idx];
 }
 
+static char *freg(int idx) {
+    static char *r[] = {"xmm8", "xmm9", "xmm10", "xmm11", "xmm12", "xmm13"};
+    if (idx < 0 || sizeof(r) / sizeof(*r) <= idx)
+        error("register out of range: %d", idx);
+    return r[idx];
+}
+
 static void gen_expr(Node *node);
 static void gen_stmt(Node *node);
 
@@ -179,10 +186,22 @@ static void gen_expr(Node *node) {
 
     switch (node->kind) {
         case ND_NUM:
-            if (node->ty->kind == TY_LONG)
+            if (node->ty->kind == TY_FLOAT) {
+                float val = node->fval;
+                printf("  mov rax, %u\n", *(int *)&val);
+                printf("  push rax\n");
+                printf("  movss %s, [rsp]\n", freg(top++));
+                printf("  add rsp, 8\n");
+            } else if (node->ty->kind == TY_DOUBLE) {
+                printf("  movabs rax, %lu\n", *(long *)&node->fval);
+                printf("  push rax\n");
+                printf("  movsd %s, [rsp]\n", freg(top++));
+                printf("  add rsp, 8\n");
+            } else if (node->ty->kind == TY_LONG) {
                 printf("  movabs %s, %lu\n", reg(top++), node->val);
-            else
+            } else {
                 printf("  mov %s, %lu\n", reg(top++), node->val);
+            }
             return;
         case ND_VAR:
         case ND_MEMBER:
