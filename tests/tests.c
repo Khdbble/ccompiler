@@ -9,6 +9,8 @@ int printf();
 int exit();
 int strcmp(char *p, char *q);
 int memcmp(char *, char *);
+double add_double(double x, double y);
+float add_float(float x, float y);
 
 int g1, g2[4];
 
@@ -1174,6 +1176,9 @@ int main() {
     assert(3, ({ int x=5; if (0.1) x=3; x; }), "({ int x=5; if (0.1) x=3; x; })");
     assert(10, ({ double i=10.0; int j=0; for (; i; i--, j++); j; }), "({ double i=10.0; int j=0; for (; i; i--, j++); j; })");
     assert(10, ({ double i=10.0; int j=0; do j++; while(--i); j; }), "({ double i=10.0; int j=0; do j++; while(--i); j; })");
+
+    assert(6, add_float(2.3, 3.8), "add_float(2.3, 3.8)");
+    assert(6, add_double(2.3, 3.8), "add_double(2.3, 3.8)");
 
     printf("OK\n");
     return 0;
