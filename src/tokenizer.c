@@ -157,6 +157,8 @@ static bool is_keyword(Token *tok) {
         "signed",
         "unsigned",
         "const",
+        "float",
+        "double",
     };
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)

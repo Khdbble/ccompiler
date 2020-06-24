@@ -75,6 +75,16 @@ static void load(Type *ty) {
         return;
     }
 
+    if (ty->kind == TY_FLOAT) {
+        printf("  movss %s, [%s]\n", freg(top - 1), reg(top - 1));
+        return;
+    }
+
+    if (ty->kind == TY_DOUBLE) {
+        printf("  movsd %s, [%s]\n", freg(top - 1), reg(top - 1));
+        return;
+    }
+
     char *rs = reg(top - 1);
     char *rd = xreg(ty, top - 1);
     char *insn = ty->is_unsigned ? "movzx" : "movsx";
@@ -105,6 +115,10 @@ static void store(Type *ty) {
             printf("  mov al, [%s+%d]\n", rs, i);
             printf("  mov [%s+%d], al\n", rd, i);
         }
+    } else if (ty->kind == TY_FLOAT) {
+        printf("  movss [%s], %s\n", rd, freg(top - 2));
+    } else if (ty->kind == TY_DOUBLE) {
+        printf("  movsd [%s], %s\n", rd, freg(top - 2));
     } else if (sz == 1) {
         printf("  mov [%s], %sb\n", rd, rs);
     } else if (sz == 2) {
