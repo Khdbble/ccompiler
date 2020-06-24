@@ -1,32 +1,59 @@
 #include "nsc.h"
 
+bool opt_E;
+static char *input_file;
+
 static void usage(void) {
     fprintf(stderr, "chibicc [ -I<path> ] <file>\n");
     exit(1);
 }
 
-int main(int argc, char **argv) {
-    char *filename = NULL;
-
+static void parse_args(int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--help"))
             usage();
 
+        if (!strcmp(argv[i], "-E")) {
+            opt_E = true;
+            continue;
+        }
+
         if (argv[i][0] == '-' && argv[i][1] != '\0')
             error("unknown argument: %s", argv[i]);
 
-        filename = argv[i];
+        input_file = argv[i];
     }
 
-    if (!filename)
+    if (!input_file)
         error("no input files");
+}
+
+static void print_tokens(Token *tok) {
+    int line = 1;
+    for (; tok->kind != TK_EOF; tok = tok->next) {
+        if (line > 1 && tok->at_bol)
+            printf("\n");
+        printf(" %.*s", tok->len, tok->loc);
+        line++;
+    }
+    printf("\n");
+}
+
+int main(int argc, char **argv) {
+    parse_args(argc, argv);
 
     // Tokenize and parse.
-    Token *tok = tokenize_file(filename);
+    Token *tok = tokenize_file(input_file);
     if (!tok)
-        error("%s: %s", filename, strerror(errno));
+        error("%s: %s", input_file, strerror(errno));
 
     tok = preprocess(tok);
+
+    if (opt_E) {
+        print_tokens(tok);
+        exit(0);
+    }
+
     Program *prog = parse(tok);
 
     // Assign offsets to local variables.
