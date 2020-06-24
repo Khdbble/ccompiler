@@ -229,14 +229,21 @@ static void divmod(Node *node, char *rd, char *rs, char *r64, char *r32) {
 }
 
 static void builtin_va_start(Node *node) {
-    int n = 0;
-    for (Var *var = current_fn->params; var; var = var->next)
-        n++;
+    int gp = 0;
+    int fp = 0;
+
+    for (Var *var = current_fn->params; var; var = var->next) {
+        if (is_flonum(var->ty))
+            fp++;
+        else
+            gp++;
+    }
 
     printf("  mov rax, [rbp-%d]\n", node->args[0]->offset);
-    printf("  mov dword ptr [rax], %d\n", n * 8);
+    printf("  mov dword ptr [rax], %d\n", gp * 8);
+    printf("  mov dword ptr [rax+4], %d\n", 48 + fp * 8);
     printf("  mov [rax+16], rbp\n");
-    printf("  sub qword ptr [rax+16], 80\n");
+    printf("  sub qword ptr [rax+16], 128\n");
     top++;
 }
 
@@ -769,12 +776,18 @@ static void emit_text(Program *prog) {
 
         // Save arg registers if function is variadic
         if (fn->is_variadic) {
-            printf("  mov [rbp-80], rdi\n");
-            printf("  mov [rbp-72], rsi\n");
-            printf("  mov [rbp-64], rdx\n");
-            printf("  mov [rbp-56], rcx\n");
-            printf("  mov [rbp-48], r8\n");
-            printf("  mov [rbp-40], r9\n");
+            printf("  mov [rbp-128], rdi\n");
+            printf("  mov [rbp-120], rsi\n");
+            printf("  mov [rbp-112], rdx\n");
+            printf("  mov [rbp-104], rcx\n");
+            printf("  mov [rbp-96], r8\n");
+            printf("  mov [rbp-88], r9\n");
+            printf("  movsd [rbp-80], xmm0\n");
+            printf("  movsd [rbp-72], xmm1\n");
+            printf("  movsd [rbp-64], xmm2\n");
+            printf("  movsd [rbp-56], xmm3\n");
+            printf("  movsd [rbp-48], xmm4\n");
+            printf("  movsd [rbp-40], xmm5\n");
         }
 
         // Push arguments to the stack
