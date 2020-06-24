@@ -23,6 +23,7 @@ int main(int argc, char **argv) {
 
     // Tokenize and parse.
     Token *tok = tokenize_file(filename);
+    tok = preprocess(tok);
     Program *prog = parse(tok);
 
     // Assign offsets to local variables.

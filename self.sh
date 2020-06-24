@@ -73,5 +73,6 @@ nsc type.c
 nsc parser.c
 nsc codegen.c
 nsc tokenizer.c
+chibicc preprocessor.c
 
 (cd $TMP; gcc -static -o ../$OUTPUT *.o)
