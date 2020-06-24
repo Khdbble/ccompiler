@@ -41,6 +41,7 @@ struct Token {
     char cont_len;   // string literal length
 
     int line_no;  // Line number
+    bool at_bol;  // True if this token is at beginning of line
 };
 
 void error(char *fmt, ...);
