@@ -249,7 +249,7 @@ static void builtin_va_start(Node *node) {
 
 // Generate code for a given node.
 static void gen_expr(Node *node) {
-    printf(".loc 1 %d\n", node->tok->line_no);
+    printf(".loc %d %d\n", node->tok->file_no, node->tok->line_no);
 
     switch (node->kind) {
         case ND_NUM:
@@ -564,7 +564,7 @@ static void gen_expr(Node *node) {
 }
 
 static void gen_stmt(Node *node) {
-    printf(".loc 1 %d\n", node->tok->line_no);
+    printf(".loc %d %d\n", node->tok->file_no, node->tok->line_no);
 
     switch (node->kind) {
         case ND_IF: {

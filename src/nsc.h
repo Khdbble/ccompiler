@@ -40,8 +40,11 @@ struct Token {
     char *contents;  // String literal contents including terminating '\0'
     char cont_len;   // string literal length
 
-    int line_no;  // Line number
-    bool at_bol;  // True if this token is at beginning of line
+    char *filename;  // Input filename
+    char *input;     // Entire input string
+    int line_no;     // Line number
+    int file_no;     // File number for .loc directive
+    bool at_bol;     // True if this token is at beginning of line
 };
 
 void error(char *fmt, ...);

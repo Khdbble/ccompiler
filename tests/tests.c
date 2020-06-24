@@ -5,6 +5,8 @@
  * This is a block comment.
  */
 
+#include "include1.h"
+
 int printf();
 int exit();
 int strcmp(char *p, char *q);
@@ -1202,6 +1204,9 @@ int main() {
     assert(1, g41 == 11, "g41==11");
 
 #
+
+    assert(5, include1, "include1");
+    assert(7, include2, "include2");
 
     printf("OK\n");
     return 0;
