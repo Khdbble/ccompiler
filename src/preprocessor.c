@@ -288,10 +288,15 @@ static MacroArg *read_macro_args(Token **rest, Token *tok, MacroParam *params) {
     return head.next;
 }
 
+// Macro arguments can be empty. For example, the second arugment
+// of foo(a,,c) is the empty list of tokens. The following special
+// pointer represents the empty list.
+static Token *EMPTY = (Token *)-1;
+
 static Token *find_arg(MacroArg *args, Token *tok) {
     for (MacroArg *ap = args; ap; ap = ap->next)
         if (tok->len == strlen(ap->name) && !strncmp(tok->loc, ap->name, tok->len))
-            return ap->tok;
+            return ap->tok ? ap->tok : EMPTY;
     return NULL;
 }
 
@@ -309,10 +314,13 @@ static Token *subst(Token *tok, MacroArg *args) {
             continue;
         }
 
+        tok = tok->next;
+
+        if (arg == EMPTY)
+            continue;
+
         for (Token *t = arg; t; t = t->next)
             cur = cur->next = copy_token(t);
-
-        tok = tok->next;
     }
 
     return head.next;
