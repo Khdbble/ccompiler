@@ -22,6 +22,10 @@ typedef struct {
   void *reg_save_area;
 } va_list[1];
 
+struct stat {
+  char _[512];
+};
+
 void *malloc(long size);
 void *calloc(long nmemb, long size);
 void *realloc(void *buf, long size);
@@ -50,6 +54,7 @@ static void va_end(va_list ap) {}
 long strtoul(char *nptr, char **endptr, int base);
 char *strncpy(char *dest, char *src, long n);
 void exit(int code);
+int stat(char *path, struct stat *statbuf);
 EOF
 
     grep -v '^#' ./src/nsc.h >> $TMP/$1
