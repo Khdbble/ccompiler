@@ -380,6 +380,19 @@ static Token *stringize(Token *hash, Token *arg) {
     return new_str_token(s, hash);
 }
 
+// Concatenate two tokens to create a new token.
+static Token *paste(Token *lhs, Token *rhs) {
+    // Paste the two tokens.
+    char *buf = malloc(lhs->len + rhs->len + 1);
+    sprintf(buf, "%.*s%.*s", lhs->len, lhs->loc, rhs->len, rhs->loc);
+
+    // Tokenize the resulting string.
+    Token *tok = tokenize(lhs->filename, lhs->file_no, buf);
+    if (tok->next->kind != TK_EOF)
+        error_tok(lhs, "pasting forms '%s', an invalid token", buf);
+    return tok;
+}
+
 // Replace func-like macro parameters with given arguments.
 static Token *subst(Token *tok, MacroArg *args) {
     Token head = {};
@@ -392,9 +405,40 @@ static Token *subst(Token *tok, MacroArg *args) {
         // it with actuals.
         if (arg) {
             tok = tok->next;
+
+            // x##y becomes y if x is the empty argument list.
+            if (arg == EMPTY && equal(tok, "##")) {
+                tok = tok->next;
+                continue;
+            }
+
             if (arg != EMPTY)
                 for (Token *t = arg; t; t = t->next)
                     cur = cur->next = copy_token(t);
+            continue;
+        }
+
+        // Replace x##y with xy. LHS has already been macro-expanded and
+        // added to `cur`.
+        if (equal(tok, "##")) {
+            tok = tok->next;
+            Token *rhs = find_arg(args, tok);
+
+            if (!rhs) {
+                *cur = *paste(cur, tok);
+                tok = tok->next;
+                continue;
+            }
+
+            tok = tok->next;
+
+            // x##y becomes x if y is the empty argument list.
+            if (rhs == EMPTY)
+                continue;
+
+            *cur = *paste(cur, rhs);
+            for (Token *t = rhs->next; t; t = t->next)
+                cur = cur->next = copy_token(t);
             continue;
         }
 

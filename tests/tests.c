@@ -1412,15 +1412,28 @@ int main() {
     assert(10, M9(2), "M9(2)");
 
 #define M11(x) #x
-    assert('a', M11(a !b  `"" c)[0], "M11(a!b  `\"\"c)[0]");
-    assert('!', M11(a !b  `"" c)[1], "M11(a!b  `\"\"c)[1]");
-    assert('b', M11(a !b  `"" c)[2], "M11(a!b  `\"\"c)[2]");
-    assert(' ', M11(a !b  `"" c)[3], "M11(a!b  `\"\"c)[3]");
-    assert('`', M11(a !b  `"" c)[4], "M11(a!b  `\"\"c)[4]");
-    assert('"', M11(a !b  `"" c)[5], "M11(a!b  `\"\"c)[5]");
-    assert('"', M11(a !b  `"" c)[6], "M11(a!b  `\"\"c)[6]");
-    assert('c', M11(a !b  `"" c)[7], "M11(a!b  `\"\"c)[7]");
-    assert(0, M11(a !b  `"" c)[8], "M11(a!b  `\"\"c)[8]");
+    assert('a', M11(a!b  `""c)[0], "M11(a!b  `\"\"c)[0]");
+    assert('!', M11(a!b  `""c)[1], "M11(a!b  `\"\"c)[1]");
+    assert('b', M11(a!b  `""c)[2], "M11(a!b  `\"\"c)[2]");
+    assert(' ', M11(a!b  `""c)[3], "M11(a!b  `\"\"c)[3]");
+    assert('`', M11(a!b  `""c)[4], "M11(a!b  `\"\"c)[4]");
+    assert('"', M11(a!b  `""c)[5], "M11(a!b  `\"\"c)[5]");
+    assert('"', M11(a!b  `""c)[6], "M11(a!b  `\"\"c)[6]");
+    assert('c', M11(a!b  `""c)[7], "M11(a!b  `\"\"c)[7]");
+    assert(0, M11(a!b  `""c)[8], "M11(a!b  `\"\"c)[8]");
+
+#define paste(x, y) x##y
+    assert(15, paste(1, 5), "paste(1,5)");
+    assert(255, paste(0, xff), "paste(0,xff)");
+    assert(3, ({ int foobar=3; paste(foo,bar); }), "({ int foobar=3; paste(foo,bar); })");
+    assert(5, paste(5, ), "paste(5,)");
+    assert(5, paste(, 5), "paste(,5)");
+
+#define paste2(x) x##2
+    assert(12, paste2(1), "paste2(1)");
+
+#define paste3(x) 2##x
+    assert(21, paste3(1), "paste3(1)");
 
     printf("OK\n");
     return 0;
