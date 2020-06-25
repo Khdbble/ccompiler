@@ -10,6 +10,7 @@
 #include <strings.h>
 
 typedef struct Type Type;
+typedef struct Hideset Hideset;
 typedef struct Member Member;
 typedef struct Relocation Relocation;
 
@@ -40,11 +41,12 @@ struct Token {
     char *contents;  // String literal contents including terminating '\0'
     char cont_len;   // string literal length
 
-    char *filename;  // Input filename
-    char *input;     // Entire input string
-    int line_no;     // Line number
-    int file_no;     // File number for .loc directive
-    bool at_bol;     // True if this token is at beginning of line
+    char *filename;    // Input filename
+    char *input;       // Entire input string
+    int line_no;       // Line number
+    int file_no;       // File number for .loc directive
+    bool at_bol;       // True if this token is at beginning of line
+    Hideset *hideset;  // For macro expansion
 };
 
 void error(char *fmt, ...);
