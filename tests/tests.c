@@ -147,7 +147,9 @@ int div_long(long a, long b) {
 _Bool bool_fn_add(_Bool x) { return x + 1; }
 _Bool bool_fn_sub(_Bool x) { return x - 1; }
 
-void ret_none() { return; }
+void ret_none() {
+    return;
+}
 
 static int static_fn() { return 3; }
 
@@ -943,7 +945,6 @@ int main() {
     assert(8, sizeof(long long), "sizeof(long long)");
     assert(8, sizeof(signed long long), "sizeof(signed long long)");
     assert(8, sizeof(signed long long int), "sizeof(signed long long int)");
-
     assert(8, sizeof(unsigned long long), "sizeof(unsigned long long)");
     assert(8, sizeof(unsigned long long int), "sizeof(unsigned long long int)");
 
@@ -1080,7 +1081,6 @@ int main() {
     assert(5, (&add2)(2, 3), "(&add2)(2,3)");
     assert(7, ({ int (*fn)(int,int) = add2; fn(2,5); }), "({ int (*fn)(int,int) = add2; fn(2,5); })");
     assert(3, fnptr()(), "fnptr()()");
-
     assert(5, (***add2)(2, 3), "(***add2)(2,3)");
 
     0.0;
@@ -1410,6 +1410,17 @@ int main() {
 #define M9(x) M10(x) * x
 #define M10(x) M9(x) + 3
     assert(10, M9(2), "M9(2)");
+
+#define M11(x) #x
+    assert('a', M11(a !b  `"" c)[0], "M11(a!b  `\"\"c)[0]");
+    assert('!', M11(a !b  `"" c)[1], "M11(a!b  `\"\"c)[1]");
+    assert('b', M11(a !b  `"" c)[2], "M11(a!b  `\"\"c)[2]");
+    assert(' ', M11(a !b  `"" c)[3], "M11(a!b  `\"\"c)[3]");
+    assert('`', M11(a !b  `"" c)[4], "M11(a!b  `\"\"c)[4]");
+    assert('"', M11(a !b  `"" c)[5], "M11(a!b  `\"\"c)[5]");
+    assert('"', M11(a !b  `"" c)[6], "M11(a!b  `\"\"c)[6]");
+    assert('c', M11(a !b  `"" c)[7], "M11(a!b  `\"\"c)[7]");
+    assert(0, M11(a !b  `"" c)[8], "M11(a!b  `\"\"c)[8]");
 
     printf("OK\n");
     return 0;

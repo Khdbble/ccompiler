@@ -611,6 +611,7 @@ static Type *pointers(Token **rest, Token *tok, Type *ty) {
 // declarator = pointers ("(" declarator ")" | ident) type-suffix
 static Type *declarator(Token **rest, Token *tok, Type *ty) {
     ty = pointers(&tok, tok, ty);
+
     if (equal(tok, "(")) {
         Type *placeholder = calloc(1, sizeof(Type));
         Type *new_ty = declarator(&tok, tok->next, placeholder);
@@ -633,7 +634,7 @@ static Type *declarator(Token **rest, Token *tok, Type *ty) {
     return ty;
 }
 
-// abstract-declarator = pointers ("(" abstract-declarator ")")? type-suffixs
+// abstract-declarator = pointers ("(" abstract-declarator ")")? type-suffix
 static Type *abstract_declarator(Token **rest, Token *tok, Type *ty) {
     ty = pointers(&tok, tok, ty);
 
@@ -832,11 +833,12 @@ static Initializer *array_initializer(Token **rest, Token *tok, Type *ty) {
 
     Initializer *init = new_init(ty, ty->array_len, NULL, tok);
 
-    for (int i = 0; i < ty->array_len && !equal(tok, "}"); i++) {
+    for (int i = 0; i < ty->array_len && !is_end(tok); i++) {
         if (i > 0)
             tok = skip(tok, ",");
         init->children[i] = initializer(&tok, tok, ty->base);
     }
+
     if (has_paren)
         tok = skip_end(tok);
     *rest = tok;

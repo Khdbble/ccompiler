@@ -160,6 +160,7 @@ static bool is_keyword(Token *tok) {
         "signed",
         "unsigned",
         "const",
+        "volatile",
         "float",
         "double",
     };
@@ -397,6 +398,7 @@ static void add_line_info(Token *tok) {
             tok->has_space = has_space;
             tok = tok->next;
         }
+
         if (*p == '\n') {
             line_no++;
             at_bol = true;
@@ -410,7 +412,7 @@ static void add_line_info(Token *tok) {
 }
 
 // Tokenize a given string and returns new tokens.
-static Token *tokenize(char *filename, int file_no, char *p) {
+Token *tokenize(char *filename, int file_no, char *p) {
     current_filename = filename;
     current_input = p;
     Token head = {};

@@ -41,7 +41,6 @@ struct Hideset {
 };
 
 static Macro *macros;
-
 static CondIncl *cond_incl;
 
 static Token *preprocess2(Token *tok);
@@ -149,7 +148,8 @@ static Token *skip_cond_incl2(Token *tok) {
     return tok;
 }
 
-// Nested `#if`, `#elif` and `#endif` are skipped.
+// Skip until next `#else`, `#elif` or `#endif`.
+// Nested `#if` and `#endif` are skipped.
 static Token *skip_cond_incl(Token *tok) {
     while (tok->kind != TK_EOF) {
         if (is_hash(tok) &&
@@ -158,6 +158,7 @@ static Token *skip_cond_incl(Token *tok) {
             tok = skip_cond_incl2(tok->next->next);
             continue;
         }
+
         if (is_hash(tok) &&
             (equal(tok->next, "elif") || equal(tok->next, "else") ||
              equal(tok->next, "endif")))
@@ -165,6 +166,33 @@ static Token *skip_cond_incl(Token *tok) {
         tok = tok->next;
     }
     return tok;
+}
+
+// Double-quote a given string and returns it.
+static char *quote_string(char *str) {
+    int bufsize = 3;
+    for (int i = 0; str[i]; i++) {
+        if (str[i] == '\\' || str[i] == '"')
+            bufsize++;
+        bufsize++;
+    }
+
+    char *buf = malloc(bufsize);
+    char *p = buf;
+    *p++ = '"';
+    for (int i = 0; str[i]; i++) {
+        if (str[i] == '\\' || str[i] == '"')
+            *p++ = '\\';
+        *p++ = str[i];
+    }
+    *p++ = '"';
+    *p++ = '\0';
+    return buf;
+}
+
+static Token *new_str_token(char *str, Token *tmpl) {
+    char *buf = quote_string(str);
+    return tokenize(tmpl->filename, tmpl->file_no, buf);
 }
 
 // Copy all tokens until the next newline, terminate them with
@@ -273,6 +301,7 @@ static MacroArg *read_macro_arg_one(Token **rest, Token *tok) {
             level++;
         else if (equal(tok, ")"))
             level--;
+
         cur = cur->next = copy_token(tok);
         tok = tok->next;
     }
@@ -317,6 +346,40 @@ static Token *find_arg(MacroArg *args, Token *tok) {
     return NULL;
 }
 
+// Concatenates all tokens in `tok` and returns a new string.
+static char *join_tokens(Token *tok) {
+    // Compute the length of the resulting token.
+    int len = 1;
+    for (Token *t = tok; t; t = t->next) {
+        if (t != tok && t->has_space)
+            len++;
+        len += t->len;
+    }
+
+    char *buf = malloc(len);
+
+    // Copy token texts.
+    int pos = 0;
+    for (Token *t = tok; t; t = t->next) {
+        if (t != tok && t->has_space)
+            buf[pos++] = ' ';
+        strncpy(buf + pos, t->loc, t->len);
+        pos += t->len;
+    }
+    buf[pos] = '\0';
+    return buf;
+}
+
+// Concatenates all tokens in `arg` and returns a new string token.
+// This function is used for the stringizing operator (#).
+static Token *stringize(Token *hash, Token *arg) {
+    // Create a new string token. We need to set some value to its
+    // source location for error reporting function, so we use a macro
+    // name token as a template.
+    char *s = join_tokens(arg);
+    return new_str_token(s, hash);
+}
+
 // Replace func-like macro parameters with given arguments.
 static Token *subst(Token *tok, MacroArg *args) {
     Token head = {};
@@ -325,19 +388,30 @@ static Token *subst(Token *tok, MacroArg *args) {
     while (tok->kind != TK_EOF) {
         Token *arg = find_arg(args, tok);
 
-        if (!arg) {
-            cur = cur->next = copy_token(tok);
+        // If the current token is a macro parameter, replaces
+        // it with actuals.
+        if (arg) {
             tok = tok->next;
+            if (arg != EMPTY)
+                for (Token *t = arg; t; t = t->next)
+                    cur = cur->next = copy_token(t);
             continue;
         }
 
+        // "#" followed by a parameter is replaced with stringized actuals.
+        if (equal(tok, "#")) {
+            Token *arg = find_arg(args, tok->next);
+            if (arg) {
+                cur = cur->next = stringize(tok, arg);
+                tok = tok->next->next;
+                continue;
+            }
+        }
+
+        // Handle non-macro token.
+        cur = cur->next = copy_token(tok);
         tok = tok->next;
-
-        if (arg == EMPTY)
-            continue;
-
-        for (Token *t = arg; t; t = t->next)
-            cur = cur->next = copy_token(t);
+        continue;
     }
 
     return head.next;
@@ -350,6 +424,7 @@ static bool expand_macro(Token **rest, Token *tok) {
     Macro *m = find_macro(tok);
     if (!m)
         return false;
+
     // Object-like macro application
     if (m->is_objlike) {
         Hideset *hs = hideset_union(tok->hideset, new_hideset(m->name));
