@@ -554,10 +554,37 @@ static char *read_file(char *path) {
     return buf;
 }
 
+// Removes backslashes followed by a newline.
+static void remove_backslash_newline(char *p) {
+    char *q = p;
+
+    // We want to keep the number of newline characters so that
+    // the logical line number matches the physical one.
+    // This counter maintain the number of newlines we have removed.
+    int cnt = 0;
+
+    while (*p) {
+        if (startswith(p, "\\\n")) {
+            p += 2;
+            cnt++;
+        } else if (*p == '\n') {
+            *q++ = *p++;
+            for (; cnt > 0; cnt--)
+                *q++ = '\n';
+        } else {
+            *q++ = *p++;
+        }
+    }
+
+    *q = '\0';
+}
+
 Token *tokenize_file(char *path) {
     char *p = read_file(path);
     if (!p)
         return NULL;
+
+    remove_backslash_newline(p);
 
     // Emit a .file directive for the assembler.
     static int file_no;

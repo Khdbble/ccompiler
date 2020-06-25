@@ -1479,6 +1479,10 @@ int main() {
 #endif
            "5");
 
+    assert(1, size\
+of(char),
+           "sizeof(char)");
+
     printf("OK\n");
     return 0;
 }
