@@ -1307,6 +1307,24 @@ int main() {
 #undef five
 #undef END
 
+#define M 5
+    assert(5,
+#if M
+           5,
+#else
+           6,
+#endif
+           "5");
+
+#define M 5
+    assert(5,
+#if M - 5
+           6,
+#elif M
+           5,
+#endif
+           "5");
+
     printf("OK\n");
     return 0;
 }
