@@ -41,6 +41,8 @@ struct Hideset {
 };
 
 static Macro *macros;
+static Macro *file_macro;
+static Macro *line_macro;
 static CondIncl *cond_incl;
 
 static Token *preprocess2(Token *tok);
@@ -523,6 +525,18 @@ static bool expand_macro(Token **rest, Token *tok) {
 
     // Object-like macro application
     if (m->is_objlike) {
+        if (m == file_macro) {
+            *rest = new_str_token(tok->filename, tok);
+            (*rest)->next = tok->next;
+            return true;
+        }
+
+        if (m == line_macro) {
+            *rest = new_num_token(tok->line_no, tok);
+            (*rest)->next = tok->next;
+            return true;
+        }
+
         Hideset *hs = hideset_union(tok->hideset, new_hideset(m->name));
         Token *body = add_hideset(m->body, hs);
         *rest = append(body, tok->next);
@@ -788,6 +802,9 @@ static void init_macros(void) {
     define_macro("__signed__", "signed");
     define_macro("__typeof__", "typeof");
     define_macro("__volatile__", "volatile");
+
+    file_macro = add_macro("__FILE__", true, NULL);
+    line_macro = add_macro("__LINE__", true, NULL);
 }
 
 // Entry point function of the preprocessor.

@@ -1,3 +1,6 @@
+char *main_filename = __FILE__;
+int main_line = __LINE__;
+
 // You can format this file with the following one-liner:
 // $ perl -i -pe 's{assert\((.*?), (.*), ".*"\);}{($a,$b)=($1,$2); (($c=$2) =~ s/([\\"])/\\\1/g); "assert($a, $b, \"$c\");"}ge' tests/tests.c
 
@@ -1500,6 +1503,11 @@ of(char),
 #undef foo
 
     assert(1, __STDC__, "__STDC__");
+
+    assert(0, strcmp(main_filename, "tests.c"), "strcmp(main_filename, \"tests.c\")");
+    assert(2, main_line, "main_line");
+    assert(0, strcmp(include1_filename, "include1.h"), "strcmp(include1_filename, \"include1.h\")");
+    assert(4, include1_line, "include1_line");
 
     printf("OK\n");
     return 0;
