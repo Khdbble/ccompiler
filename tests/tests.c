@@ -200,6 +200,10 @@ float add_float3(float x, float y, float z) {
 
 int M9(int x) { return x * x; }
 
+char *func_fn(void) {
+    return __func__;
+}
+
 int main() {
     assert(0, 0, "0");
     assert(42, 42, "42");
@@ -1508,6 +1512,10 @@ of(char),
     assert(2, main_line, "main_line");
     assert(0, strcmp(include1_filename, "include1.h"), "strcmp(include1_filename, \"include1.h\")");
     assert(4, include1_line, "include1_line");
+
+    assert(5, sizeof(__func__), "sizeof(__func__)");
+    assert(0, strcmp("main", __func__), "strcmp(\"main\", __func__)");
+    assert(0, strcmp("func_fn", func_fn()), "strcmp(\"func_fn\", func_fn())");
 
     printf("OK\n");
     return 0;
