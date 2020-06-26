@@ -326,3 +326,4 @@ void codegen(Program *prog);
 //
 
 extern bool opt_E;
+extern char **include_paths;

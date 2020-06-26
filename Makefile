@@ -14,12 +14,12 @@ nsc-stage3: nsc-stage2
 		./self.sh tmp-stage3 ./nsc-stage2 nsc-stage3
 
 simpletest: nsc tests/extern.o
-		(cd tests; ../nsc tests.c) > tmp.s
+		(cd tests; ../nsc -I. tests.c) > tmp.s
 		gcc -static -o tmp tmp.s tests/extern.o
 		./tmp
 
 test-stage2: nsc-stage2 tests/extern.o
-		(cd tests; ../nsc-stage2 tests.c) > tmp.s
+		(cd tests; ../nsc-stage2 -I. tests.c) > tmp.s
 		gcc -static -o tmp tmp.s tests/extern.o
 		./tmp
 
