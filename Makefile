@@ -29,7 +29,7 @@ test-stage3: nsc-stage3
 simpletest-all: simpletest test-stage2 test-stage3
 
 clean:
-		rm -rf ./nsc ./nsc-stage* ./src/*.o *~ ./tmp* tests/*~ tests/*.o
+		rm -rf ./nsc* ./nsc-stage* ./src/*.o *~ ./tmp* tests/*~ tests/*.o
 
 test:
 		docker run --rm -v ${HOME}/documents/ccompiler:/ccompiler -w /ccompiler compiler make simpletest

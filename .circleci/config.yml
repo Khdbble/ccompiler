@@ -18,6 +18,6 @@ jobs:
       - run:
           name: Test to check if the compiler works
           command: 'make simpletest'
-      - run:
-          name: Test on self-hosting
-          command: 'make simpletest-all'
+      # - run:
+      #     name: Test on self-hosting
+      #     command: 'make simpletest-all'
