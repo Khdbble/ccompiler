@@ -11,7 +11,7 @@ mkdir -p $TMP
 nsc() {
     $CC -Iinclude -I/usr/local/include -I/usr/include \
         -I/usr/include/linux -I/usr/include/x86_64-linux-gnu \
-        src/$1 > $TMP/${1%.c}.s
+        -o $TMP/${1%.c}.s src/$1
     gcc -c -o $TMP/${1%.c}.o $TMP/${1%.c}.s
 }
 
