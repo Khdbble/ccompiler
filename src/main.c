@@ -20,6 +20,14 @@ static void redirect_stdout(char *filename) {
     fclose(fp);
 }
 
+static void define(char *str) {
+    char *eq = strchr(str, '=');
+    if (eq)
+        define_macro(strndup(str, eq - str), eq + 1);
+    else
+        define_macro(str, "");
+}
+
 static void parse_args(int argc, char **argv) {
     include_paths = malloc(sizeof(char *) * argc);
     int npaths = 0;
@@ -50,6 +58,18 @@ static void parse_args(int argc, char **argv) {
             continue;
         }
 
+        if (!strcmp(argv[i], "-D")) {
+            if (!argv[++i])
+                usage();
+            define(argv[i]);
+            continue;
+        }
+
+        if (!strncmp(argv[i], "-D", 2)) {
+            define(argv[i] + 2);
+            continue;
+        }
+
         if (argv[i][0] == '-' && argv[i][1] != '\0')
             error("unknown argument: %s", argv[i]);
 
@@ -76,6 +96,7 @@ static void print_tokens(Token *tok) {
 }
 
 int main(int argc, char **argv) {
+    init_macros();
     parse_args(argc, argv);
 
     // Tokenize and parse.

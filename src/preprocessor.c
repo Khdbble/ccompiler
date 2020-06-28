@@ -781,12 +781,12 @@ static Token *preprocess2(Token *tok) {
     return head.next;
 }
 
-static void define_macro(char *name, char *buf) {
+void define_macro(char *name, char *buf) {
     Token *tok = tokenize("(internal)", 1, buf);
     add_macro(name, true, tok);
 }
 
-static void init_macros(void) {
+void init_macros(void) {
     // Define predefined macros
     define_macro("__chibicc__", "1");
     define_macro("_LP64", "1");
@@ -858,7 +858,6 @@ static void join_adjacent_string_literals(Token *tok) {
 
 // Entry point function of the preprocessor.
 Token *preprocess(Token *tok) {
-    init_macros();
     tok = preprocess2(tok);
     if (cond_incl)
         error_tok(cond_incl->tok, "unterminated conditional directive");
