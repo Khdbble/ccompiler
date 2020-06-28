@@ -1534,6 +1534,10 @@ of(char),
                       "abcd\nefgh"),
            "!strcmp(\"abc\" \"d\", \"abcd\\nefgh\")");
 
+#define CONCAT(x, y) x##y
+    assert(5, ({ int f0zz=5; CONCAT(f,0zz); }), "({ int f0zz=5; CONCAT(f,0zz); })");
+    assert(5, ({ CONCAT(4, .57) + 0.5; }), "({ CONCAT(4,.57) + 0.5; })");
+
     printf("OK\n");
     return 0;
 }
