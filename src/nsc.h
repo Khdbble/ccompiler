@@ -341,4 +341,6 @@ void codegen(Program *prog);
 //
 
 extern bool opt_E;
+extern bool opt_fpic;
+
 extern char **include_paths;

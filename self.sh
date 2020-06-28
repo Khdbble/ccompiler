@@ -27,4 +27,4 @@ nsc codegen.c
 nsc tokenizer.c
 nsc preprocessor.c
 
-(cd $TMP; gcc -static -o ../$OUTPUT *.o)
+(cd $TMP; gcc -o ../$OUTPUT *.o)

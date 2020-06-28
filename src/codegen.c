@@ -43,8 +43,12 @@ static void gen_addr(Node *node) {
         case ND_VAR:
             if (node->var->is_local)
                 printf("  lea %s, [rbp-%d]\n", reg(top++), node->var->offset);
-            else
+            else if (!opt_fpic)
                 printf("  mov %s, offset %s\n", reg(top++), node->var->name);
+            else if (node->var->is_static)
+                printf("  lea %s, %s[rip]\n", reg(top++), node->var->name);
+            else
+                printf("  mov %s, qword ptr %s@GOTPCREL[rip]\n", reg(top++), node->var->name);
             return;
         case ND_DEREF:
             gen_expr(node->lhs);

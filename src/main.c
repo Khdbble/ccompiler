@@ -1,7 +1,10 @@
 #include "nsc.h"
 
 bool opt_E;
+bool opt_fpic = true;
+
 char **include_paths;
+
 static char *input_file;
 
 static void usage(void) {
@@ -67,6 +70,16 @@ static void parse_args(int argc, char **argv) {
 
         if (!strncmp(argv[i], "-D", 2)) {
             define(argv[i] + 2);
+            continue;
+        }
+
+        if (!strcmp(argv[i], "-fpic") || !strcmp(argv[i], "-fPIC")) {
+            opt_fpic = true;
+            continue;
+        }
+
+        if (!strcmp(argv[i], "-fno-pic") || !strcmp(argv[i], "-fno-PIC")) {
+            opt_fpic = false;
             continue;
         }
 
