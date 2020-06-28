@@ -1559,6 +1559,17 @@ of(char),
     assert(4, ({ struct bit1 x={1,2,3,4,5}; x.d; }), "({ struct bit1 x={1,2,3,4,5}; x.d; })");
     assert(5, ({ struct bit1 x={1,2,3,4,5}; x.e; }), "({ struct bit1 x={1,2,3,4,5}; x.e; })");
 
+    struct bit2 {
+        int a : 1;
+        unsigned int b : 1;
+        signed int c : 1;
+    };
+
+    assert(4, sizeof(struct bit2), "sizeof(struct bit2)");
+    assert(1, ({ struct bit2 x={1,1,1}; x.a; }), "({ struct bit2 x={1,1,1}; x.a; })");
+    assert(1, ({ struct bit2 x={1,1,1}; x.b; }), "({ struct bit2 x={1,1,1}; x.b; })");
+    assert(-1, ({ struct bit2 x={1,1,1}; x.c; }), "({ struct bit2 x={1,1,1}; x.c; })");
+
     printf("OK\n");
     return 0;
 }

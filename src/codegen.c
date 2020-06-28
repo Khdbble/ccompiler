@@ -281,7 +281,10 @@ static void gen_expr(Node *node) {
             Member *mem = node->member;
             if (mem->is_bitfield) {
                 printf("  shl %s, %d\n", reg(top - 1), 64 - mem->bit_width - mem->bit_offset);
-                printf("  shr %s, %d\n", reg(top - 1), 64 - mem->bit_width);
+                if (mem->ty->is_unsigned)
+                    printf("  shr %s, %d\n", reg(top - 1), 64 - mem->bit_width);
+                else
+                    printf("  sar %s, %d\n", reg(top - 1), 64 - mem->bit_width);
             }
             return;
         }

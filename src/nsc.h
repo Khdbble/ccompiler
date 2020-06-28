@@ -248,6 +248,7 @@ struct Type {
     int size;            // sizeof() value
     int align;           // alignment
     bool is_unsigned;    // unsigned or signed
+    bool is_signed;      // true if "signed" keyword is specified
     bool is_incomplete;  // incomplete type
     bool is_const;
 
@@ -300,6 +301,11 @@ extern Type *ty_char;
 extern Type *ty_short;
 extern Type *ty_int;
 extern Type *ty_long;
+
+extern Type *ty_schar;
+extern Type *ty_sshort;
+extern Type *ty_sint;
+extern Type *ty_slong;
 
 extern Type *ty_uchar;
 extern Type *ty_ushort;
