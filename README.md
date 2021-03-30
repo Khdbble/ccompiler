@@ -1,5 +1,5 @@
 # C Compiler
-[![CircleCI](https://circleci.com/gh/Khdbble/ccompiler.svg?style=svg)](https://circleci.com/gh/Khdbble/ccompiler)
+[![CircleCI](https://circleci.com/gh/a2not/ccompiler.svg?style=svg)](https://circleci.com/gh/a2not/ccompiler)
 
 Compiler for C language.
 
